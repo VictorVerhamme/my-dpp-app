@@ -225,18 +225,57 @@ else:
                             else: st.error(f"Fout: {resp.text}")
 
         with tab2:
+            st.subheader("Overzicht Geregistreerde Producten")
             raw_data = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{user}")
+            
             if raw_data:
                 df = pd.DataFrame(raw_data)
-                st.dataframe(df[['id', 'name', 'battery_type', 'views']], use_container_width=True, hide_index=True)
+                
+                # Uitgebreide lijst van kolommen voor een volledig overzicht
+                display_cols = [
+                    'id', 'name', 'model_name', 'battery_type', 'chemistry', 
+                    'weight_kg', 'carbon_footprint', 'rec_lithium_pct', 
+                    'rec_cobalt_pct', 'soh_pct', 'cycle_count', 
+                    'ce_status', 'dpp_version', 'views'
+                ]
+                
+                # We tonen alleen de kolommen die daadwerkelijk in de dataframe zitten
+                existing_cols = [c for c in display_cols if c in df.columns]
+                
+                # De tabel met alle info
+                st.dataframe(df[existing_cols], use_container_width=True, hide_index=True)
+                
                 st.divider()
-                sel_name = st.selectbox("Product selecteren voor acties", df['name'].tolist())
+                st.subheader("Acties & Detailaudit")
+                
+                # Selectie voor specifieke acties
+                sel_name = st.selectbox("Product selecteren voor export of inspectie", df['name'].tolist())
                 item = df[df['name'] == sel_name].iloc[0]
                 
-                c_pdf, c_json, c_del = st.columns(3)
-                c_pdf.download_button("📥 Audit PDF", generate_certificate(item), f"Audit_{sel_name}.pdf")
-                c_json.download_button("🤖 Machine JSON", df[df['name']==sel_name].to_json(), f"DPP_{sel_name}.json")
-                if c_del.button("🗑️ Verwijderen"):
-                    httpx.delete(f"{API_URL_BATTERIES}?id=eq.{item['id']}", headers=headers)
-                    st.rerun()
-            else: st.info("Geen producten gevonden.")
+                col_info, col_qr = st.columns([2, 1])
+                with col_info:
+                    st.write(f"**Geselecteerd:** {sel_name}")
+                    st.write(f"**Uniek ID (UUID):** {item.get('battery_uid', 'N/A')}")
+                    st.write(f"**Productielocatie:** {item.get('manufacturer_address', 'N/A')}")
+                    
+                    st.markdown("---")
+                    c_pdf, c_json, c_del = st.columns(3)
+                    
+                    # PDF Export
+                    pdf_bytes = generate_certificate(item)
+                    c_pdf.download_button("📥 Audit PDF", pdf_bytes, f"Audit_{sel_name}.pdf")
+                    
+                    # JSON Export
+                    c_json.download_button("🤖 Machine JSON", df[df['name']==sel_name].to_json(), f"DPP_{sel_name}.json")
+                    
+                    # Verwijderen
+                    if c_del.button("🗑️ Verwijderen"):
+                        with httpx.Client() as client:
+                            client.delete(f"{API_URL_BATTERIES}?id=eq.{item['id']}", headers=headers)
+                        st.rerun()
+
+                with col_qr:
+                    # Toon de QR code die bij dit specifieke ID hoort
+                    st.image(make_qr(item['id']), width=180, caption="Scanbare QR-Code")
+            else:
+                st.info("Nog geen producten gevonden in de database.")
