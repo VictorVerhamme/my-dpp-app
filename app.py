@@ -197,7 +197,7 @@ else:
         with tab1:
             st.info("Vul alle velden in om een conform EU 2023/1542 paspoort te genereren.")
             with st.form("master_compliance_wizard"):
-            c1, c2, c3, c4 = st.columns(4)
+                c1, c2, c3, c4 = st.columns(4)
                 with c1:
                     st.markdown("##### 1. Identificatie")
                     f_name = st.text_input("Productnaam (Publiek)")
@@ -278,5 +278,6 @@ else:
                     httpx.delete(f"{API_URL_BATTERIES}?id=eq.{item['id']}", headers=headers)
                     st.rerun()
             else: st.info("Nog geen producten geregistreerd.")
+
 
 
