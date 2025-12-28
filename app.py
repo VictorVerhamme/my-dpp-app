@@ -120,7 +120,7 @@ st.markdown(f"""
     .stApp {{ background-color: {COLOR_BG}; }}
     header, footer {{visibility: hidden;}}
     h1, h2, h3 {{ color: {COLOR_ACCENT} !important; }}
-    .login-container {{ display: flex; flex-direction: column; align-items: center; max-width: 400px; margin: 0 auto; padding-top: 10vh; }}
+    .login-container {{ display: flex; flex-direction: column; align-items: center; max-width: 150px; margin: 0 auto; padding-top: 10vh; }}
     .stButton button {{ background-color: {COLOR_ACCENT} !important; color: white !important; border-radius: 12px !important; width: 100% !important; border: none; font-weight: bold; }}
     .metric-card {{ background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03); text-align: center; }}
     </style>
@@ -140,7 +140,7 @@ if "id" in q_params:
         httpx.patch(f"{API_URL_BATTERIES}?id=eq.{d['id']}", json={"views": (d.get('views') or 0) + 1}, headers=headers)
 
         st.markdown(f"<div style='background:white; padding:40px; border-radius:25px; text-align:center; border-top:10px solid {COLOR_ACCENT}; box-shadow: 0 10px 30px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
-        st.image(LOGO_URL, width=150)
+        st.image(LOGO_URL, width=500)
         st.title(d.get('name', 'Product Paspoort'))
         st.write(f"Fabrikant: **{d.get('manufacturer')}**")
         st.divider()
@@ -176,7 +176,7 @@ else:
 
     if not st.session_state.company:
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
-        st.image(LOGO_URL, width=300)
+        st.image(LOGO_URL, width=500)
         st.markdown("### Compliance Portaal Inloggen")
         u = st.text_input("Username", placeholder="Naam", label_visibility="collapsed")
         p = st.text_input("Password", type="password", placeholder="Wachtwoord", label_visibility="collapsed")
@@ -190,7 +190,7 @@ else:
     
     else:
         user = st.session_state.company
-        st.sidebar.image(LOGO_URL, width=350)
+        st.sidebar.image(LOGO_URL, width=500)
         st.sidebar.title(f"Welkom, {user}")
         if st.sidebar.button("Uitloggen"):
             st.session_state.company = None
