@@ -15,7 +15,7 @@ COLOR_ACCENT = "#8FAF9A"  # Saliegroen
 COLOR_BG_BROKEN_WHITE = "#FDFBF7" # Achtergrond van je logo
 
 # JOUW LOGO LINK
-LOGO_URL = "https://i.postimg.cc/sXHV1JHy/Chat-GPT-Image-28-dec-2025-14-50-31.png"
+LOGO_URL = "https://i.postimg.cc/D0K876Sm/Chat-GPT-Image-28-dec-2025-14-50-31-removebg-preview.png"
 
 # Layout op "wide" voor maximale controle over de kolommen
 st.set_page_config(page_title="Digital Product Passport", page_icon="🔋", layout="wide")
@@ -249,3 +249,4 @@ else:
                                 payload = {"name": str(row['name']), "manufacturer": user, "carbon_footprint": float(row.get('carbon_footprint', 0)), "recycled_content": int(row.get('recycled_content', 0))}
                                 client.post(API_URL_BATTERIES, json=payload, headers=headers)
                         st.success("Batch-import voltooid!")
+
