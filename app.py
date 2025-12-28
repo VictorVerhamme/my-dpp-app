@@ -13,6 +13,11 @@ API_URL_COMPANIES = f"{SUPABASE_URL}/rest/v1/Companies"
 COLOR_ACCENT = "#8FAF9A"  # Saliegroen
 COLOR_BG_CARD = "#E3ECE6" # Lichtgroen
 
+# --- LOGO URL (Placeholder - Wit icoon) ---
+# ### HIER JOUW LOGO ###
+# Vervang deze link later door een link naar je eigen witte logo (PNG of SVG)
+LOGO_URL = "https://cdn-icons-png.flaticon.com/128/664/664866.png" # Wit batterij icoon
+
 st.set_page_config(page_title="EU Battery Passport", page_icon="🔋", layout="wide")
 
 headers = {
@@ -32,12 +37,23 @@ st.markdown(f"""
         padding: 40px; 
         border-radius: 20px; 
         border: 1px solid {COLOR_ACCENT};
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     }}
+    /* De groene balk is nu een flex-container om het logo te centreren */
     .green-header {{
         background-color: {COLOR_ACCENT};
-        height: 40px;
+        height: 50px; /* Iets hoger gemaakt voor het logo */
         border-radius: 10px 10px 0 0;
         margin: -40px -40px 30px -40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }}
+    /* Styling voor het logo in de header */
+    .header-logo {{
+        height: 30px;
+        width: auto;
+        filter: brightness(0) invert(1); /* Maakt elk zwart icoon wit */
     }}
     .passport-card {{
         background-color: {COLOR_BG_CARD};
@@ -87,7 +103,8 @@ else:
         companies = get_data(API_URL_COMPANIES)
         _, col, _ = st.columns([1, 2, 1])
         with col:
-            st.markdown('<div class="login-box"><div class="green-header"></div>', unsafe_allow_html=True)
+            # Hier voegen we de afbeelding toe in de groene header
+            st.markdown(f'<div class="login-box"><div class="green-header"><img src="{LOGO_URL}" class="header-logo"></div>', unsafe_allow_html=True)
             st.subheader("Bedrijfs Portaal")
             co_names = [c['name'] for c in companies]
             selected_co = st.selectbox("Selecteer uw bedrijf", options=co_names)
