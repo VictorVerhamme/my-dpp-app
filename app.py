@@ -334,12 +334,37 @@ else:
                             st.warning("Geen bedrijfsgegevens gevonden.")
 
                     with col_right:
-                        st.markdown("### 🛠️ Systeem Status")
-                        st.success("API Verbinding: Actief")
-                        st.success("Database: Verbonden (Supabase)")
-                        st.info(f"Huidige Sessie: {st.session_state.company}")
+                        st.markdown("### 🛠️ Systeembeheer")
                         
+                        # --- NIEUW: BEDRIJF VERWIJDEREN SECTIE ---
+                        st.markdown("---")
+                        st.write("🗑️ **Verwijder een Partner**")
+                        
+                        # Maak een lijst van namen voor de selectiebox
+                        company_names = [c.get('name') for c in all_companies]
+                        
+                        if company_names:
+                            target_company = st.selectbox("Selecteer bedrijf om te verwijderen", company_names, key="delete_company_select")
+                            
+                            # Veiligheidscheck via een knop
+                            if st.button(f"Definitief verwijderen: {target_company}", type="secondary"):
+                                # Voer de DELETE request uit naar de Companies tabel
+                                delete_url = f"{API_URL_COMPANIES}?name=eq.{target_company}"
+                                
+                                with httpx.Client() as client:
+                                    resp = client.delete(delete_url, headers=headers)
+                                    
+                                    if resp.status_code in [200, 204]:
+                                        st.success(f"✅ Bedrijf '{target_company}' is succesvol verwijderd.")
+                                        # Forceer een refresh om de lijst in de linker kolom bij te werken
+                                        st.rerun()
+                                    else:
+                                        st.error(f"❌ Fout bij verwijderen: {resp.text}")
+                        else:
+                            st.info("Geen partners beschikbaar om te verwijderen.")
+                        
+                        st.markdown("---")
+                        # Bestaande systeem status info
+                        st.success("API & Database: Verbonden")
                         if st.button("🔄 Forceer Systeem Verversing"):
                             st.rerun()
-
-
