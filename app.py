@@ -196,7 +196,7 @@ else:
             """)
         else:
             st.title("Digital Passport Management")
-            tab1, tab2 = st.tabs(["✨ Nieuwe Registratie", "📊 Vlootoverzicht"])
+            tab1, tab2, tab3 = st.tabs(["✨ Nieuwe Registratie", "📊 Vlootoverzicht", "📂 Bulk Import"])
 
             with tab1:
                 st.image(LOGO_URL, width=300)
@@ -279,4 +279,61 @@ else:
                     st.download_button("📥 Download Audit PDF", generate_certificate(item), f"Audit_{sel}.pdf", use_container_width=True)
                 else: st.info("Geen producten gevonden.")
 
+            # --- VOEG DIT TOE ONDER WITH TAB2 ---
+            with tab3:
+                st.subheader("📂 Bulk Import via CSV")
+                st.info("Gebruik dit tabblad om honderden batterijen tegelijk te uploaden.")
+                
+                # 1. Download-knop voor het juiste sjabloon
+                template_data = {
+                    "Productnaam": ["Voorbeeld Accu"],
+                    "Model ID": ["MOD-123"],
+                    "Batchnummer": ["BATCH-001"],
+                    "Gewicht kg": [10.5],
+                    "Batterij Type": ["EV"],
+                    "Chemie": ["NMC"],
+                    "CO2 kg": [5.0],
+                    "EOL Instructies": ["Inleveren bij lokaal recyclepunt"]
+                }
+                template_csv = pd.DataFrame(template_data).to_csv(index=False).encode('utf-8')
+                st.download_button("📥 Download CSV Sjabloon", template_csv, "dpp_import_template.csv", "text/csv")
 
+                # 2. Upload sectie
+                uploaded_file = st.file_uploader("Upload je ingevulde CSV bestand", type="csv")
+                
+                if uploaded_file:
+                    df_upload = pd.read_csv(uploaded_file)
+                    st.write("Voorbeeld van de te uploaden data:")
+                    st.dataframe(df_upload.head())
+
+                    if st.button("🚀 Start Bulk Import naar Register"):
+                        success_count = 0
+                        with st.spinner("Data wordt gevalideerd en verwerkt..."):
+                            for _, row in df_upload.iterrows():
+                                # Automatische generatie van UUID en metadata per rij
+                                payload = {
+                                    "name": str(row.get('Productnaam', 'Bulk Import')),
+                                    "model_name": str(row.get('Model ID', 'N/A')),
+                                    "batch_number": str(row.get('Batchnummer', 'N/A')),
+                                    "battery_uid": str(uuid.uuid4()),
+                                    "production_date": datetime.now().strftime("%Y-%m-%d"),
+                                    "weight_kg": float(row.get('Gewicht kg', 1.0)),
+                                    "battery_type": str(row.get('Batterij Type', 'Draagbaar')),
+                                    "chemistry": str(row.get('Chemie', 'Onbekend')),
+                                    "carbon_footprint": float(row.get('CO2 kg', 0.0)),
+                                    "eol_instructions": str(row.get('EOL Instructies', 'Volg lokale recyclingregels')),
+                                    "manufacturer": st.session_state.company,
+                                    "modified_by": st.session_state.company,
+                                    "registration_date": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                                    "ce_status": True,
+                                    "dpp_version": "1.0.0",
+                                    "views": 0
+                                }
+
+                                with httpx.Client() as client:
+                                    r = client.post(API_URL_BATTERIES, json=payload, headers=headers)
+                                    if r.status_code == 201:
+                                        success_count += 1
+                        
+                        st.success(f"Import voltooid! ✅ {success_count} producten toegevoegd aan het register.")
+                        st.balloons()
