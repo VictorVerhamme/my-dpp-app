@@ -67,11 +67,24 @@ def generate_certificate(data):
         pdf.cell(60, 7, txt=f"{label}:", border=1)
         pdf.cell(130, 7, txt=str(val), border=1, ln=True)
 
-    # QR Code onderaan
-    qr_img = make_qr(data['id'])
+    # QR Code FIX: Veilig wegschrijven en sluiten voor FPDF gebruik
+    qr_img_bytes = make_qr(data['id'])
+    
+    # Gebruik een context manager voor het tijdelijke bestand
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
-        tmp.write(qr_img)
-        pdf.image(tmp.name, x=75, y=pdf.get_y()+10, w=50)
+        tmp.write(qr_img_bytes)
+        tmp_path = tmp.name  # Pad opslaan
+        # Het bestand wordt automatisch gesloten bij het verlaten van dit blok
+    
+    try:
+        pdf.ln(10)
+        # Nu is het bestand gesloten en kan FPDF het veilig lezen
+        pdf.image(tmp_path, x=75, y=pdf.get_y(), w=50)
+    finally:
+        # Altijd het tijdelijke bestand opruimen
+        import os
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
         
     return pdf.output(dest='S').encode('latin-1')
 
@@ -168,4 +181,5 @@ else:
                     st.image(make_qr(item['id']), width=180, caption="Scanbare QR-Code")
             else:
                 st.info("Nog geen producten in de voorraad.")
+
 
