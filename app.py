@@ -217,4 +217,38 @@ else:
 
         file = st.file_uploader("Sleep je CSV bestand hierheen", type="csv")
         if file:
-            df = pd.read_csv(
+            df = pd.read_csv(file, sep=None, engine='python', encoding='utf-8-sig')
+            df.columns = [c.lower().strip() for c in df.columns]
+            st.dataframe(df.head(), use_container_width=True)
+            
+            if st.button("🚀 Start Import"):
+                progress_bar = st.progress(0) # Een voortgangsbalkje
+                success_count = 0
+                with httpx.Client() as client:
+                    total = len(df)
+                    for i, (_, row) in enumerate(df.iterrows()):
+                        try:
+                            payload = {"name": str(row['name']), "manufacturer": str(row['manufacturer']), "carbon_footprint": float(row.get('carbon_footprint',0)), "recycled_content": int(row.get('recycled_content',0))}
+                            client.post(API_URL, json=payload, headers=headers)
+                            success_count += 1
+                            progress_bar.progress((i + 1) / total) # Update balk
+                        except Exception as e: st.warning(f"Rij {i} fout: {e}")
+                st.success(f"Import afgerond! {success_count} van de {total} batterijen geïmporteerd.")
+
+    with tab3:
+        st.subheader("Live Database Overzicht")
+        col1, col2 = st.columns([3,1])
+        with col2:
+            if st.button("🔄 Verversen"):
+                st.rerun()
+        
+        with httpx.Client() as client:
+            resp = client.get(API_URL, headers=headers)
+            if resp.status_code == 200:
+                df_db = pd.DataFrame(resp.json())
+                # We laten alleen de relevante kolommen zien voor een netter overzicht
+                st.dataframe(
+                    df_db[['id', 'name', 'manufacturer', 'carbon_footprint', 'recycled_content', 'created_at']],
+                    use_container_width=True,
+                    hide_index=True
+                )
