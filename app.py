@@ -28,7 +28,7 @@ headers = {
     "Prefer": "return=representation"
 }
 
-# --- 2. HELPERS (PDF, QR, DATA) ---
+# --- 2. HELPERS (ONGEWIJZIGD) ---
 def is_authority():
     return st.query_params.get("role") == "inspectie"
 
@@ -55,7 +55,8 @@ def generate_certificate(data):
         ("Gewicht (kg)", data.get('weight_kg')),
         ("CO2 Voetafdruk", f"{data.get('carbon_footprint')} kg"),
         ("CO2 Methode", data.get('carbon_method')),
-        ("Geregistreerd door", data.get('modified_by'))
+        ("Geregistreerd door", data.get('modified_by')),
+        ("Registratie Datum", data.get('registration_date'))
     ]
     for label, val in fields:
         pdf.cell(70, 7, txt=f"{label}:", border=1)
@@ -86,7 +87,7 @@ st.markdown(f"<style>.stApp {{ background-color: {COLOR_BG}; }} h1, h2, h3 {{ co
 q_params = st.query_params
 
 if "id" in q_params:
-    # PASPOORT PAGINA
+    # PASPOORT PAGINA (SCAN VIEW)
     res = get_data(f"{API_URL_BATTERIES}?id=eq.{q_params['id']}")
     if res:
         d = res[0]
@@ -98,13 +99,14 @@ if "id" in q_params:
         st.info(d.get('eol_instructions') or "Geen instructies opgegeven.")
         if is_authority():
             st.divider(); st.subheader("🕵️ Audit Trail")
-            st.json({"UUID": d.get("battery_uid"), "Batch": d.get("batch_number"), "User": d.get("modified_by")})
+            st.json({"UUID": d.get("battery_uid"), "Batch": d.get("batch_number"), "User": d.get("modified_by"), "Datum": d.get("registration_date")})
         st.markdown("</div>", unsafe_allow_html=True)
 else:
-    # LOGIN & NAVIGATIE
+    # LOGIN & NAVIGATION LOGIC
     if 'company' not in st.session_state: st.session_state.company = None
 
     if not st.session_state.company:
+        # LOGIN SCREEN
         st.markdown('<div style="text-align:center; padding-top:10vh;">', unsafe_allow_html=True)
         st.image(LOGO_URL, width=350)
         u = st.text_input("Username")
@@ -114,83 +116,88 @@ else:
             if res and res[0]['password'] == p:
                 st.session_state.company = res[0]['name']; st.rerun()
     else:
-        # --- ZIJBALK NAVIGATIE ---
+        # --- SIDEBAR NAVIGATION ---
         st.sidebar.image(LOGO_URL, width=120)
         st.sidebar.title(f"Welkom, {st.session_state.company}")
-        nav = st.sidebar.radio("Ga naar:", ["🏠 Dashboard", "📖 Compliance Gids"])
+        nav_choice = st.sidebar.radio("Navigatie", ["🏠 Dashboard", "📖 Compliance Gids"])
         if st.sidebar.button("Uitloggen"):
             st.session_state.company = None; st.rerun()
 
-        if nav == "📖 Compliance Gids":
-            # --- EXTRA PAGINA: UITLEG ---
-            st.title("📖 Compliance Gids & Definities")
+        if nav_choice == "📖 Compliance Gids":
+            # --- PAGINA: COMPLIANCE GIDS ---
+            st.title("📖 Compliance Gids: Uitleg Parameters")
             st.markdown("""
-            Welkom in de kennisbank van het Digital Product Passport. Hieronder vindt u de gedetailleerde uitleg per veld:
+            In dit gedeelte vindt u de volledige uitleg over de parameters die vereist zijn voor de EU-batterijverordening 2023/1542.
             
+            ---
             ### 1. Identificatie & Traceerbaarheid
-            * **Productnaam:** De commerciële benaming van de batterij.
-            * **Model ID:** De unieke technische code van de fabrikant.
-            * **Batch / Serienummer:** Identificatie van de specifieke productie-run.
-            * **Productiedatum:** De dag waarop de assemblage is voltooid.
-            * **Gewicht:** Fysiek gewicht in kg, essentieel voor recyclingberekeningen.
+            * **Productnaam:** De commerciële naam zoals deze op de markt verschijnt.
+            * **Model ID:** De technische code van de fabrikant voor dit specifieke ontwerp.
+            * **Batch / Serienummer:** Identificatie van de specifieke productie-run voor traceerbaarheid bij defecten.
+            * **Productiedatum:** De exacte datum waarop de assemblage van de batterij is voltooid.
+            * **Gewicht:** Het fysieke gewicht van de batterij in kilogram, essentieel voor recycling-berekeningen.
+            * **UUID:** Een door het systeem automatisch gegenereerde unieke code voor deze specifieke batterij-eenheid.
             
             ### 2. Markttoegang
-            * **EPR Nummer:** Registratie voor de uitgebreide producentenverantwoordelijkheid.
-            * **CE DoC Referentie:** Het nummer van uw officiële conformiteitsverklaring.
+            * **EPR Nummer:** Registratienummer voor de uitgebreide producentenverantwoordelijkheid (afvalbeheer).
+            * **CE DoC Referentie:** Verwijzing naar het officiële document van de 'Declaration of Conformity'.
             
-            ### 3. Milieu (LCA)
-            * **Carbon footprint:** De totale uitstoot (Cradle-to-gate) in kg CO2.
-            * **CO2 Methode:** De rekenmethode, waarbij **EU PEF** de Europese standaard is.
-            * **Recycled Lithium:** Het percentage herwonnen materiaal in de batterij.
+            ### 3. Milieu & CO₂
+            * **Carbon Footprint:** De totale uitstoot (Cradle-to-gate) in kg CO2-equivalent over de levenscyclus.
+            * **CO₂ Methode:** De gehanteerde rekenstandaard. De Europese standaard is **EU PEF** (Product Environmental Footprint).
+            * **Recycling %:** Het gewichtspercentage van materialen (zoals Lithium) dat is herwonnen uit afval.
             
-            ### 4. Levensduur
-            * **Cycli tot 80%:** Het aantal keren dat de batterij tot 100% kan laden voordat de capaciteit onder de 80% zakt.
-            * **SoH (State of Health):** De huidige conditie vergeleken met nieuwstaat.
+            ### 4. Levensduur & Prestatie
+            * **Cycli tot 80%:** Het aantal laad- en ontlaadcycli voordat de batterijcapaciteit onder de 80% van de originele waarde zakt.
+            * **SoH (State of Health):** De actuele conditie van de batterij ten opzichte van de nieuwstaat.
             
-            ### 5. Instructies
-            * **End-of-life instructies:** Verplichte tekst die de consument vertelt hoe ze de batterij veilig moeten afvoeren.
+            ### 5. Circulariteit & EOL
+            * **End-of-life instructies:** Verplichte instructies die de consument vertellen hoe en waar zij de batterij aan het einde van de levensduur veilig moeten inleveren.
             """)
+        
         else:
-            # --- DASHBOARD ---
-            st.title("Compliance Dashboard")
+            # --- PAGINA: DASHBOARD ---
+            st.title(f"Management Dashboard - {st.session_state.company}")
             tab1, tab2 = st.tabs(["✨ Nieuwe Registratie", "📊 Vlootoverzicht"])
 
             with tab1:
-                st.image(LOGO_URL, width=280)
-                st.info("Hover over het 'i'-icoontje voor directe uitleg. Raadpleeg de gids in de zijbalk voor volledige tekst.")
+                st.image(LOGO_URL, width=300)
                 with st.form("master_wizard"):
                     c1, c2, c3, c4 = st.columns(4)
                     with c1:
                         st.markdown("##### 1. Identificatie")
-                        f_name = st.text_input("Productnaam *", help="De commerciële naam. Zie Gids sectie 1.")
-                        f_model = st.text_input("Model ID *", help="Technische code van fabrikant. Zie Gids sectie 1.")
-                        f_batch = st.text_input("Batchnummer *", help="Identificeert de specifieke productie-run.")
+                        f_name = st.text_input("Productnaam *")
+                        f_model = st.text_input("Model ID *")
+                        f_batch = st.text_input("Batchnummer *")
                         f_date = st.date_input("Productiedatum")
-                        f_weight = st.number_input("Gewicht (kg) *", min_value=0.1, help="Vereist voor recycling targets.")
+                        f_weight = st.number_input("Gewicht (kg) *", min_value=0.1)
                     with c2:
                         st.markdown("##### 2. Markttoegang")
-                        f_epr = st.text_input("EPR Nummer", help="Registratienummer voor afvalbeheer. Zie Gids sectie 2.")
-                        f_doc = st.text_input("CE DoC Referentie", help="Referentienummer van de conformiteitsverklaring.")
+                        f_epr = st.text_input("EPR Nummer")
+                        f_doc = st.text_input("CE DoC Referentie")
                         f_ce = st.checkbox("CE Bevestigd", value=True)
                     with c3:
                         st.markdown("##### 3. Milieu")
-                        f_co2 = st.number_input("CO2 Voetafdruk (kg)", min_value=0.0, help="Totale emissie over de levenscyclus. Zie Gids sectie 3.")
-                        f_meth = st.selectbox("CO2 Methode", ["EU PEF", "ISO 14067"], help="EU PEF is de Europese rekenstandaard.")
-                        f_li = st.number_input("% Rec. Lithium", 0.0, 100.0, help="Minimaal 6% vereist vanaf 2027.")
+                        f_co2 = st.number_input("Carbon footprint (kg CO2)", min_value=0.0)
+                        f_meth = st.selectbox("CO2 Methode", ["EU PEF", "ISO 14067"])
+                        f_li = st.number_input("% Rec. Lithium", 0.0, 100.0)
                     with c4:
                         st.markdown("##### 4. Levensduur")
-                        f_cycles = st.number_input("Cycli tot 80%", min_value=0, help="Aantal laadbeurten tot degradatie. Zie Gids sectie 4.")
+                        f_cycles = st.number_input("Cycli tot 80%", min_value=0)
                         f_soh = st.slider("State of Health (%)", 0, 100, 100)
 
                     st.divider()
-                    f_eol = st.text_area("End-of-life instructies (Verplicht)", help="Uitleg voor de consument over inlevering. Zie Gids sectie 5.")
+                    f_eol = st.text_area("End-of-life instructies (Verplicht)")
 
                     if st.form_submit_button("Valideren & Registreren", use_container_width=True):
+                        # DUPLICAAT CHECK LOGICA
                         check_url = f"{API_URL_BATTERIES}?model_name=eq.{f_model}&batch_number=eq.{f_batch}"
-                        if get_data(check_url):
-                            st.error(f"❌ Combinatie Model '{f_model}' en Batch '{f_batch}' bestaat al.")
+                        existing = get_data(check_url)
+                        
+                        if existing:
+                            st.error(f"❌ Fout: Product met Model '{f_model}' en Batch '{f_batch}' bestaat al.")
                         elif f_li < 6.0:
-                            st.error("❌ Lithium-gehalte te laag.")
+                            st.error("❌ Lithium-gehalte te laag (min. 6%).")
                         else:
                             payload = {
                                 "name": f_name, "model_name": f_model, "batch_number": f_batch,
@@ -204,13 +211,15 @@ else:
                             with httpx.Client() as client:
                                 r = client.post(API_URL_BATTERIES, json=payload, headers=headers)
                                 if r.status_code == 201:
-                                    st.success("✅ Geregistreerd!"); st.balloons(); st.rerun()
+                                    st.success("✅ Succesvol geregistreerd!"); st.balloons(); st.rerun()
 
-            with t2:
+            with tab2:
                 raw_data = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{st.session_state.company}")
                 if raw_data:
                     df = pd.DataFrame(raw_data)
                     st.dataframe(df[['battery_uid', 'name', 'batch_number', 'registration_date']], use_container_width=True, hide_index=True)
+                    st.divider()
                     sel = st.selectbox("Selecteer product voor PDF", df['name'].tolist())
                     item = df[df['name'] == sel].iloc[0]
                     st.download_button("📥 Download Audit PDF", generate_certificate(item), f"Audit_{sel}.pdf", use_container_width=True)
+                else: st.info("Geen producten gevonden.")
