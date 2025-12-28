@@ -221,83 +221,36 @@ else:
             """)
         else:
             st.title("Digital Passport Management")
+            
+            # --- TABS DEFINIËREN ---
             if st.session_state.company == "SuperAdmin":
-                tab1, tab4 = st.tabs(["📊 Vlootoverzicht", "🔐 Admin Control"])
+                # SuperAdmin krijgt alleen Vloot en Admin Control
+                tab_fleet, tab_admin = st.tabs(["📊 Vlootoverzicht", "🔐 Admin Control"])
+                tab_reg, tab_bulk = None, None # Deze bestaan niet voor Admin
             else:
-                tab1, tab2, tab3 = st.tabs(["✨ Nieuwe Registratie", "📊 Vlootoverzicht", "📂 Bulk Import"])
+                # Normale gebruikers krijgen de standaard 3 tabs
+                tab_reg, tab_fleet, tab_bulk = st.tabs(["✨ Nieuwe Registratie", "📊 Vlootoverzicht", "📂 Bulk Import"])
+                tab_admin = None # Bestaat niet voor normale gebruikers
 
-            with tab1:
-                st.image(LOGO_URL, width=300)
-                with st.form("master_compliance_wizard"):
-                    col1, col2, col3, col4 = st.columns(4)
-                    with col1:
-                        st.markdown("##### 1. Identificatie")
-                        f_name = st.text_input("Productnaam *")
-                        f_model = st.text_input("Model ID *")
-                        f_batch = st.text_input("Batchnummer *")
-                        f_date = st.date_input("Productiedatum")
-                        f_weight = st.number_input("Gewicht (kg) *", min_value=0.1)
-                        f_type = st.selectbox("Batterij Type", ["EV", "LMT", "Industrieel", "Draagbaar"])
-                        f_chem = st.text_input("Chemie (bijv. NMC, LFP)")
-                    with col2:
-                        st.markdown("##### 2. Markttoegang")
-                        f_epr = st.text_input("EPR Nummer")
-                        f_addr = st.text_input("Adres Fabriek")
-                        f_doc = st.text_input("CE DoC Referentie")
-                        f_mod = st.selectbox("CE Module", ["Module A", "Module A1", "Module B", "Module G"])
-                        f_ce = st.checkbox("CE Bevestigd", value=True)
-                    with col3:
-                        st.markdown("##### 3. Milieu & Recycling")
-                        f_co2 = st.number_input("Carbon footprint (kg CO2)", min_value=0.0)
-                        f_meth = st.selectbox("CO2 Methode", ["EU PEF", "ISO 14067"])
-                        f_li = st.number_input("% Rec. Lithium", 0.0, 100.0)
-                        f_co = st.number_input("% Rec. Kobalt", 0.0, 100.0)
-                        f_ni = st.number_input("% Rec. Nikkel", 0.0, 100.0)
-                        f_pb = st.number_input("% Rec. Lood", 0.0, 100.0)
-                        f_ry = st.number_input("Referentiejaar Content", 2020, 2030, 2025)
-                    with col4:
-                        st.markdown("##### 4. Prestatie")
-                        f_cap = st.number_input("Capaciteit (kWh)", min_value=0.0)
-                        f_soh = st.slider("Huidige State of Health (%)", 0, 100, 100)
-                        f_cycles = st.number_input("Cycli tot 80%", min_value=0)
-                        f_ret = st.number_input("Capaciteitsretentie (%)", 0, 100)
-                        f_ver = st.text_input("DPP Versie", "1.0.0")
+            # --- TAB 1: REGISTRATIE (Alleen voor gebruikers) ---
+            if tab_reg:
+                with tab_reg:
+                    st.image(LOGO_URL, width=300)
+                    with st.form("master_compliance_wizard"):
+                        # ... (Houd hier je volledige formulier code zoals die was) ...
+                        st.write("Formulier inhoud...") # Voorbeeld placeholder
+                        if st.form_submit_button("Valideren & Registreren"):
+                            pass 
 
-                    st.divider()
-                    col_ext1, col_ext2 = st.columns(2)
-                    with col_ext1:
-                        f_eol = st.text_area("End-of-life instructies voor de consument (Verplicht)")
-                    with col_ext2:
-                        f_origin = st.text_area("Herkomst kritieke grondstoffen (Due Diligence)")
+            # --- TAB 2: VLOOTOVERZICHT (Voor IEDEREEN) ---
+            with tab_fleet:
+                # SUPERADMIN CHECK VOOR DATA
+                if st.session_state.company == "SuperAdmin":
+                    raw_data = get_data(API_URL_BATTERIES)
+                    st.write("🔧 **SuperAdmin Modus:** U bekijkt de volledige wereldwijde database.")
+                else:
+                    raw_data = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{st.session_state.company}")
 
-                    if st.form_submit_button("Valideren & Registreren", use_container_width=True):
-                        check_url = f"{API_URL_BATTERIES}?model_name=eq.{f_model}&batch_number=eq.{f_batch}"
-                        if get_data(check_url):
-                            st.error(f"❌ Fout: Product met Model '{f_model}' en Batch '{f_batch}' bestaat al.")
-                        elif f_li < 6.0:
-                            st.error("❌ Lithium-gehalte te laag (min. 6% vereist).")
-                        else:
-                            payload = {
-                                "name": f_name, "model_name": f_model, "batch_number": f_batch,
-                                "battery_uid": str(uuid.uuid4()), "production_date": str(f_date),
-                                "weight_kg": f_weight, "battery_type": f_type, "chemistry": f_chem,
-                                "manufacturer": st.session_state.company, "manufacturer_address": f_addr,
-                                "epr_number": f_epr, "ce_doc_reference": f_doc, "ce_module": f_mod,
-                                "ce_status": f_ce, "carbon_footprint": f_co2, "carbon_method": f_meth,
-                                "rec_lithium_pct": f_li, "rec_cobalt_pct": f_co, "rec_nickel_pct": f_ni,
-                                "rec_lead_pct": f_pb, "rec_reference_year": f_ry, "capacity_kwh": f_cap,
-                                "soh_pct": f_soh, "cycles_to_80": f_cycles, "capacity_retention_pct": f_ret,
-                                "eol_instructions": f_eol, "mineral_origin": f_origin,
-                                "modified_by": st.session_state.company,
-                                "registration_date": datetime.now().strftime("%Y-%m-%d %H:%M"), "views": 0
-                            }
-                            with httpx.Client() as client:
-                                r = client.post(API_URL_BATTERIES, json=payload, headers=headers)
-                                if r.status_code == 201:
-                                    st.success("✅ Succesvol geregistreerd!"); st.balloons(); st.rerun()
-
-            with tab2:
-                raw_data = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{st.session_state.company}")
                 if raw_data:
                     df = pd.DataFrame(raw_data)
                     st.dataframe(df[['battery_uid', 'name', 'batch_number', 'registration_date']], use_container_width=True, hide_index=True)
@@ -305,70 +258,19 @@ else:
                     sel = st.selectbox("Selecteer product voor PDF", df['name'].tolist())
                     item = df[df['name'] == sel].iloc[0]
                     st.download_button("📥 Download Audit PDF", generate_certificate(item), f"Audit_{sel}.pdf", use_container_width=True)
-                else: st.info("Geen producten gevonden.")
-
-                if st.session_state.company == "SuperAdmin":
-                    raw_data = get_data(API_URL_BATTERIES) # Haalt alles op zonder filter
-                    st.write("🔧 **SuperAdmin Modus:** U bekijkt de volledige wereldwijde database.")
                 else:
-                    raw_data = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{st.session_state.company}")
+                    st.info("Geen producten gevonden.")
 
-            # --- VOEG DIT TOE ONDER WITH TAB2 ---
-            with tab3:
-                st.subheader("📂 Bulk Import via CSV")
-                st.info("Gebruik dit tabblad om honderden batterijen tegelijk te uploaden.")
-                
-                # 1. Download-knop voor het juiste sjabloon
-                template_data = {
-                    "Productnaam": ["Voorbeeld Accu"],
-                    "Model ID": ["MOD-123"],
-                    "Batchnummer": ["BATCH-001"],
-                    "Gewicht kg": [10.5],
-                    "Batterij Type": ["EV"],
-                    "Chemie": ["NMC"],
-                    "CO2 kg": [5.0],
-                    "EOL Instructies": ["Inleveren bij lokaal recyclepunt"]
-                }
-                template_csv = pd.DataFrame(template_data).to_csv(index=False).encode('utf-8')
-                st.download_button("📥 Download CSV Sjabloon", template_csv, "dpp_import_template.csv", "text/csv")
+            # --- TAB 3: BULK IMPORT (Alleen voor gebruikers) ---
+            if tab_bulk:
+                with tab_bulk:
+                    st.subheader("📂 Bulk Import via CSV")
+                    # ... (Houd hier je volledige Bulk Import code zoals die was) ...
 
-                # 2. Upload sectie
-                uploaded_file = st.file_uploader("Upload je ingevulde CSV bestand", type="csv")
-                
-                if uploaded_file:
-                    df_upload = pd.read_csv(uploaded_file)
-                    st.write("Voorbeeld van de te uploaden data:")
-                    st.dataframe(df_upload.head())
-
-                    if st.button("🚀 Start Bulk Import naar Register"):
-                        success_count = 0
-                        with st.spinner("Data wordt gevalideerd en verwerkt..."):
-                            for _, row in df_upload.iterrows():
-                                # Automatische generatie van UUID en metadata per rij
-                                payload = {
-                                    "name": str(row.get('Productnaam', 'Bulk Import')),
-                                    "model_name": str(row.get('Model ID', 'N/A')),
-                                    "batch_number": str(row.get('Batchnummer', 'N/A')),
-                                    "battery_uid": str(uuid.uuid4()),
-                                    "production_date": datetime.now().strftime("%Y-%m-%d"),
-                                    "weight_kg": float(row.get('Gewicht kg', 1.0)),
-                                    "battery_type": str(row.get('Batterij Type', 'Draagbaar')),
-                                    "chemistry": str(row.get('Chemie', 'Onbekend')),
-                                    "carbon_footprint": float(row.get('CO2 kg', 0.0)),
-                                    "eol_instructions": str(row.get('EOL Instructies', 'Volg lokale recyclingregels')),
-                                    "manufacturer": st.session_state.company,
-                                    "modified_by": st.session_state.company,
-                                    "registration_date": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                    "ce_status": True,
-                                    "dpp_version": "1.0.0",
-                                    "views": 0
-                                }
-
-                                with httpx.Client() as client:
-                                    r = client.post(API_URL_BATTERIES, json=payload, headers=headers)
-                                    if r.status_code == 201:
-                                        success_count += 1
-                        
-                        st.success(f"Import voltooid! ✅ {success_count} producten toegevoegd aan het register.")
-
+            # --- TAB 4: ADMIN CONTROL (Alleen voor SuperAdmin) ---
+            if tab_admin:
+                with tab_admin:
+                    st.subheader("🔐 Admin Control Panel")
+                    # PLAK HIER JE ADMIN CODE (Statistieken, bedrijvenlijst, etc.)
+                    st.write("Welkom SuperAdmin, hier komen de systeemgegevens.")
 
