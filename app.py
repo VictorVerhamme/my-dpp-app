@@ -304,6 +304,12 @@ else:
                     st.download_button("📥 Download Audit PDF", generate_certificate(item), f"Audit_{sel}.pdf", use_container_width=True)
                 else: st.info("Geen producten gevonden.")
 
+                if st.session_state.company == "SuperAdmin":
+                    raw_data = get_data(API_URL_BATTERIES) # Haalt alles op zonder filter
+                    st.write("🔧 **SuperAdmin Modus:** U bekijkt de volledige wereldwijde database.")
+                else:
+                    raw_data = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{st.session_state.company}")
+
             # --- VOEG DIT TOE ONDER WITH TAB2 ---
             with tab3:
                 st.subheader("📂 Bulk Import via CSV")
@@ -361,3 +367,4 @@ else:
                                         success_count += 1
                         
                         st.success(f"Import voltooid! ✅ {success_count} producten toegevoegd aan het register.")
+
