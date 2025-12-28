@@ -157,19 +157,44 @@ else:
         if nav == "📖 Compliance Gids":
             st.title("📖 Compliance Gids & Definities")
             st.markdown("""
-            ### 1. Identificatie
-            * **Productnaam:** De commerciële naam.
-            * **Model ID:** De technische modelcode.
-            * **Batchnummer:** Identificatie van de specifieke productie-run.
-            * **UUID:** De unieke digitale ID per eenheid.
+            ### Gids voor het invullen van het productformulier
+
+            1. Identificatie
             
-            ### 2. Milieu & CO2
-            * **Carbon Footprint:** Totale LCA emissie.
-            * **Methode:** Bijv. EU PEF (Product Environmental Footprint).
-            * **Recycled Content:** Percentage herwonnen grondstoffen.
+            Productnaam (verplicht): Naam van het product, bijv. “EV Accu 10Ah”.
+            Model ID (verplicht): Interne of externe modelidentificatie, bijv. “EV-1000X”.
+            Batchnummer (verplicht): Productiebatchnummer, bijv. “BATCH-20251228-01”.
+            Productiedatum: Datum van productie, bijv. “2025/12/28”.
+            Gewicht (kg) (verplicht): Gewicht van het product, bijv. “0,10”.
+            Batterijtype: Type batterij, bijv. “EV”.
+            Chemie: Chemische samenstelling, bijv. “NMC” of “LFP”.
             
-            ### 3. Circulariteit
-            * **EOL Instructies:** Hoe de consument de batterij moet afvoeren.
+            2. Markttoegang
+            
+            EPR-nummer: Nummer voor Extended Producer Responsibility.
+            Adres fabriek: Locatie van productie.
+            CE DoC referentie: Nummer van de CE Declaration of Conformity, bijv. “CE-DoC-2025-001”.
+            CE module: CE-certificeringsmodule, bijv. “Module A”.
+            
+            3. Milieu & Recycling
+            
+            Carbon footprint (kg CO2): CO2-uitstoot van het product, bijv. “0,00”.
+            CO2 methode: Methode voor CO2-berekening, bijv. “EU PEF”.
+            % gerecycled lithium: Percentage lithium uit recycling.
+            % gerecycled kobalt: Percentage kobalt uit recycling.
+            % gerecycled nikkel: Percentage nikkel uit recycling.
+            % gerecycled lood: Percentage lood uit recycling.
+            Referentiejaar content: Jaar van de milieugegevens, bijv. “2025”.
+            
+            4. Prestatie
+            
+            Capaciteit (kWh): Energiecapaciteit, bijv. “0,00”.
+            Huidige State of Health (%): Gezondheidstoestand van de batterij, 0–100.
+            Cycli tot 80%: Aantal laadcycli tot 80% capaciteit, bijv. “0”.
+            Capaciteitsretentie (%): Percentage van oorspronkelijke capaciteit dat behouden blijft, bijv. “0”.
+            DPP versie: Versie van het Data/Product Performance Protocol, bijv. “1.0.0”.
+            End-of-life instructies (verplicht): Instructies voor correcte afvoer door de consument.
+            Herkomst kritieke grondstoffen (Due Diligence): Bronnen van kritieke grondstoffen, inclusief due diligence, bijv. “NMC: Democratische Republiek Congo, LFP: China”.
             """)
         else:
             st.title("Digital Passport Management")
@@ -255,3 +280,4 @@ else:
                     item = df[df['name'] == sel].iloc[0]
                     st.download_button("📥 Download Audit PDF", generate_certificate(item), f"Audit_{sel}.pdf", use_container_width=True)
                 else: st.info("Geen producten gevonden.")
+
