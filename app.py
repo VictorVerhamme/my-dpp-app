@@ -5,6 +5,8 @@ import pandas as pd
 from io import BytesIO
 from fpdf import FPDF
 import tempfile
+import uuid
+from datetime import datetime
 import os
 
 # --- 1. CONFIGURATIE ---
@@ -17,7 +19,7 @@ COLOR_ACCENT = "#8FAF9A"  # Saliegroen
 COLOR_BG_BROKEN_WHITE = "#FDFBF7"
 LOGO_URL = "https://i.postimg.cc/D0K876Sm/Chat-GPT-Image-28-dec-2025-14-50-31-removebg-preview.png"
 
-st.set_page_config(page_title="DPP Compliance Engine", page_icon="🔋", layout="wide")
+st.set_page_config(page_title="DPP Compliance Master", page_icon="🔋", layout="wide")
 
 headers = {
     "apikey": SUPABASE_KEY,
@@ -26,7 +28,12 @@ headers = {
     "Prefer": "return=representation"
 }
 
-# --- 2. HELPERS (QR & PDF FIX) ---
+# --- 2. JURIDISCHE LOGICA (Inspectie Modus) ---
+def is_authority():
+    """Checkt of de kijker een autoriteit is via ?role=inspectie in de URL"""
+    return st.query_params.get("role") == "inspectie"
+
+# --- 3. HELPERS (QR & PDF FIX) ---
 def make_qr(id):
     url = f"https://digitalpassport.streamlit.app/?id={id}"
     qr = qrcode.make(url)
@@ -45,19 +52,22 @@ def generate_certificate(data):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
     
-    # Tabel met alle data
+    # Tabel met alle wettelijke data
     pdf.set_fill_color(245, 247, 246)
-    pdf.cell(190, 8, txt="Wettelijke Productgegevens", ln=True, align='L', fill=True)
+    pdf.cell(190, 8, txt="Wettelijke Productgegevens (EU 2023/1542)", ln=True, align='L', fill=True)
     pdf.set_font("Arial", '', 9)
     
     fields = [
+        ("Product UID", data.get('battery_uid')),
         ("Naam / Model", data.get('name')),
         ("Type", data.get('battery_type')),
-        ("Chemie", data.get('chemistry')),
+        ("Gewicht (kg)", data.get('weight_kg')),
+        ("Productiedatum", data.get('production_date')),
         ("CO2 Impact", f"{data.get('carbon_footprint')} kg CO2-eq"),
         ("EPR Nummer", data.get('epr_number')),
         ("CE Status", "Gecertificeerd" if data.get('ce_status') else "Niet Gecertificeerd"),
         ("Recycled Lithium", f"{data.get('rec_lithium_pct')}%"),
+        ("Recycled Cobalt", f"{data.get('rec_cobalt_pct')}%"),
         ("State of Health", f"{data.get('soh_pct')}%"),
         ("Grondstof Herkomst", data.get('mineral_origin'))
     ]
@@ -66,7 +76,7 @@ def generate_certificate(data):
         pdf.cell(60, 7, txt=f"{label}:", border=1)
         pdf.cell(130, 7, txt=str(val or 'N/A'), border=1, ln=True)
 
-    # QR Code FIX: Veilig wegschrijven en sluiten voor FPDF
+    # QR Code FIX
     qr_img_bytes = make_qr(data['id'])
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
         tmp.write(qr_img_bytes)
@@ -88,49 +98,55 @@ def get_data(url):
             return r.json() if r.status_code == 200 else []
     except: return []
 
-# --- 3. STYLING (Gecentreerd & Schoon) ---
+# --- 4. STYLING ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: {COLOR_BG_BROKEN_WHITE}; }}
     header, footer {{visibility: hidden;}}
     h1, h2, h3 {{ color: {COLOR_ACCENT} !important; }}
     
-    /* Login Centering */
     .login-container {{
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        max-width: 400px;
-        margin: 0 auto;
-        padding-top: 10vh;
+        display: flex; flex-direction: column; align-items: center;
+        max-width: 400px; margin: 0 auto; padding-top: 10vh;
     }}
     
-    /* Button Centering */
     .stButton {{ display: flex; justify-content: center; }}
     .stButton button {{
-        background-color: {COLOR_ACCENT} !important;
-        color: white !important;
-        border-radius: 12px !important;
-        width: 100% !important;
-        max-width: 400px;
+        background-color: {COLOR_ACCENT} !important; color: white !important;
+        border-radius: 12px !important; width: 100% !important; max-width: 400px;
     }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- 4. APP LOGICA ---
+# --- 5. APP LOGICA ---
 q_params = st.query_params
 if "id" in q_params:
-    # --- PASPOORT VIEW (Consument) ---
+    # --- PASPOORT VIEW (PUBLIEK + INSPECTIE) ---
     res = get_data(f"{API_URL_BATTERIES}?id=eq.{q_params['id']}")
     if res:
         d = res[0]
+        authority_mode = is_authority()
+        
         st.markdown(f"<div style='background:white; padding:40px; border-radius:20px; text-align:center; border-top:8px solid {COLOR_ACCENT}'>", unsafe_allow_html=True)
         st.image(LOGO_URL, width=150)
         st.title(d.get('name', 'Product Paspoort'))
-        st.divider()
-        c1, c2 = st.columns(2)
+        
+        c1, c2, c3 = st.columns(3)
         c1.metric("CO2 Voetafdruk", f"{d.get('carbon_footprint', 0)} kg")
-        c2.metric("Lithium Recycled", f"{d.get('rec_lithium_pct', 0)}%")
+        c2.metric("Gewicht", f"{d.get('weight_kg', 0)} kg")
+        c3.metric("State of Health", f"{d.get('soh_pct', 100)}%")
+        
+        if authority_mode:
+            st.divider()
+            st.subheader("🕵️ Vertrouwelijke Inspectie Gegevens")
+            st.json({
+                "Uniek ID (UUID)": d.get("battery_uid"),
+                "EPR Nummer": d.get("epr_number"),
+                "Grondstof Herkomst": d.get("mineral_origin"),
+                "Productiedatum": d.get("production_date")
+            })
+        else:
+            st.info("ℹ️ Scan met een geautoriseerd device voor volledige technische audit-gegevens.")
         st.markdown("</div>", unsafe_allow_html=True)
     else: st.error("Paspoort niet gevonden.")
 
@@ -138,17 +154,16 @@ else:
     if 'company' not in st.session_state: st.session_state.company = None
 
     if not st.session_state.company:
-        # --- LOGIN SCHERM ---
+        # --- LOGIN ---
         st.markdown('<div class="login-container">', unsafe_allow_html=True)
         st.image(LOGO_URL, width=350)
-        u = st.text_input("Gebruikersnaam", placeholder="Gebruikersnaam", label_visibility="collapsed")
-        p = st.text_input("Wachtwoord", type="password", placeholder="Wachtwoord", label_visibility="collapsed")
+        u = st.text_input("Username", placeholder="Naam", label_visibility="collapsed")
+        p = st.text_input("Password", type="password", placeholder="Wachtwoord", label_visibility="collapsed")
         if st.button("Inloggen"):
             res = get_data(f"{API_URL_COMPANIES}?name=eq.{u}")
             if res and res[0]['password'] == p:
                 st.session_state.company = res[0]['name']
                 st.rerun()
-            else: st.error("Inloggegevens onjuist.")
         st.markdown('</div>', unsafe_allow_html=True)
     
     else:
@@ -169,9 +184,8 @@ else:
                 with col1:
                     st.markdown("##### 1. Identificatie")
                     f_name = st.text_input("Productnaam")
-                    f_model = st.text_input("Model ID")
+                    f_weight = st.number_input("Gewicht (kg)", min_value=0.1)
                     f_type = st.selectbox("Type", ["EV", "LMT", "Industrieel", "Draagbaar"])
-                    f_chem = st.text_input("Chemie")
                 with col2:
                     st.markdown("##### 2. Producent")
                     f_addr = st.text_input("Adres Fabriek")
@@ -180,47 +194,29 @@ else:
                 with col3:
                     st.markdown("##### 3. Milieu")
                     f_co2 = st.number_input("kg CO2-eq", min_value=0.0)
-                    f_scope = st.selectbox("Scope", ["Cradle-to-gate", "Cradle-to-grave"])
-                with col4:
-                    st.markdown("##### 4. Recycled")
                     f_li = st.number_input("% Rec. Lithium", 0.0, 100.0)
-                    f_co = st.number_input("% Rec. Kobalt", 0.0, 100.0)
-
-                st.divider()
-                col5, col6, col7, col8 = st.columns(4)
-                with col5:
-                    st.markdown("##### 5. Prestatie")
-                    f_cap = st.number_input("Capaciteit (kWh)", min_value=0.0)
+                with col4:
+                    st.markdown("##### 4. Prestatie")
                     f_soh = st.slider("SoH (%)", 0, 100, 100)
-                with col6:
-                    st.markdown("##### 6. Circulariteit")
-                    f_rem = st.checkbox("Verwijderbaar", value=True)
-                    f_eol = st.selectbox("EOL Route", ["Recycling", "Reuse"])
-                with col7:
-                    st.markdown("##### 7. Due Diligence")
-                    f_origin = st.text_area("Grondstof herkomst")
-                    f_audit = st.checkbox("Audit uitgevoerd")
-                with col8:
-                    st.markdown("##### 8. DPP")
-                    f_ver = st.text_input("Versie", "1.0.0")
+                    f_ver = st.text_input("DPP Versie", "1.0.0")
 
                 if st.form_submit_button("Valideren & Registreren", use_container_width=True):
-                    # Compliance Check
+                    # Compliance Check (Voorbeeld: Lithium min 6% voor 2027)
                     if f_li < 6.0:
                         st.error("❌ Lithium gehalte te laag (min. 6% vereist).")
                     else:
                         payload = {
-                            "name": f_name, "manufacturer": user, "model_name": f_model,
-                            "battery_type": f_type, "chemistry": f_chem, "carbon_footprint": f_co2,
-                            "rec_lithium_pct": f_li, "rec_cobalt_pct": f_co, "ce_status": f_ce,
-                            "epr_number": f_epr, "soh_pct": f_soh, "is_removable": f_rem,
-                            "eol_route": f_eol, "mineral_origin": f_origin, "due_diligence_audit": f_audit,
+                            "name": f_name, "manufacturer": user, "battery_uid": str(uuid.uuid4()),
+                            "production_date": datetime.now().strftime("%Y-%m-%d"),
+                            "weight_kg": f_weight, "battery_type": f_type,
+                            "carbon_footprint": f_co2, "rec_lithium_pct": f_li,
+                            "ce_status": f_ce, "epr_number": f_epr, "soh_pct": f_soh,
                             "dpp_version": f_ver, "views": 0
                         }
                         with httpx.Client() as client:
                             resp = client.post(API_URL_BATTERIES, json=payload, headers=headers)
                             if resp.status_code == 201:
-                                st.success(f"✅ {f_name} geregistreerd!")
+                                st.success("✅ Geregistreerd!")
                                 st.balloons()
                             else: st.error(f"Fout: {resp.text}")
 
@@ -228,7 +224,7 @@ else:
             raw_data = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{user}")
             if raw_data:
                 df = pd.DataFrame(raw_data)
-                st.dataframe(df[['id', 'name', 'battery_type', 'views']], use_container_width=True, hide_index=True)
+                st.dataframe(df[['id', 'name', 'battery_uid', 'views']], use_container_width=True, hide_index=True)
                 st.divider()
                 sel_name = st.selectbox("Product selecteren voor acties", df['name'].tolist())
                 item = df[df['name'] == sel_name].iloc[0]
@@ -239,4 +235,3 @@ else:
                 if c_del.button("🗑️ Verwijderen"):
                     httpx.delete(f"{API_URL_BATTERIES}?id=eq.{item['id']}", headers=headers)
                     st.rerun()
-            else: st.info("Geen producten gevonden.")
