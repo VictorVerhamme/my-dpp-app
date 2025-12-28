@@ -103,7 +103,7 @@ else:
                         
                         # De URL voor het paspoort
                         # PAS DIT AAN NAAR JE EIGEN URL:
-                        base_url = "https://jouw-app-naam.streamlit.app" 
+                        base_url = "https://digitalpassport.streamlit.app/" 
                         passport_url = f"{base_url}/?id={new_id}"
                         
                         # QR Code genereren en opslaan in een variabele
@@ -130,4 +130,5 @@ else:
             file_name=f"QR_{new_battery_name}.png",
             mime="image/png"
         )
+
 
