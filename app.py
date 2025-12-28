@@ -221,7 +221,10 @@ else:
             """)
         else:
             st.title("Digital Passport Management")
-            tab1, tab2, tab3 = st.tabs(["✨ Nieuwe Registratie", "📊 Vlootoverzicht", "📂 Bulk Import"])
+            if st.session_state.company == "SuperAdmin":
+                tab1, tab4 = st.tabs(["📊 Vlootoverzicht", "🔐 Admin Control"])
+            else:
+                tab1, tab2, tab3 = st.tabs(["✨ Nieuwe Registratie", "📊 Vlootoverzicht", "📂 Bulk Import"])
 
             with tab1:
                 st.image(LOGO_URL, width=300)
@@ -367,4 +370,5 @@ else:
                                         success_count += 1
                         
                         st.success(f"Import voltooid! ✅ {success_count} producten toegevoegd aan het register.")
+
 
