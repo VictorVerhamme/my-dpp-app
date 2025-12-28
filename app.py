@@ -16,7 +16,7 @@ COLOR_BG_CARD = "#E3ECE6" # Lichtgroen
 # --- LOGO URL (Placeholder - Wit icoon) ---
 # ### HIER JOUW LOGO ###
 # Vervang deze link later door een link naar je eigen witte logo (PNG of SVG)
-LOGO_URL = "https://cdn-icons-png.flaticon.com/128/664/664866.png" # Wit batterij icoon
+LOGO_URL = "https://chatgpt.com/s/m_695135bd39b881918f9478eab96dd985"
 
 st.set_page_config(page_title="EU Battery Passport", page_icon="🔋", layout="wide")
 
@@ -193,3 +193,4 @@ else:
                                 payload = {"name": str(row['name']), "manufacturer": user, "carbon_footprint": float(row.get('carbon_footprint', 0)), "recycled_content": int(row.get('recycled_content', 0))}
                                 client.post(API_URL_BATTERIES, json=payload, headers=headers)
                         st.success("Import klaar!")
+
