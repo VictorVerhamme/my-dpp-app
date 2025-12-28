@@ -197,31 +197,31 @@ else:
         with tab1:
             st.info("Vul alle velden in om een conform EU 2023/1542 paspoort te genereren.")
             with st.form("master_compliance_wizard"):
-                c1, c2, c3, c4 = st.columns(4)
-                    with c1:
-                        st.markdown("##### 1. Identificatie")
-                        f_name = st.text_input("Productnaam (Publiek)")
-                        f_model = st.text_input("Model ID")
-                        f_batch = st.text_input("Batch / Serienummer")
-                        f_date = st.date_input("Productiedatum") # NIEUW
-                        f_weight = st.number_input("Gewicht (kg)", min_value=0.0) # NIEUW
-                    with c2:
-                        st.markdown("##### 2. Producent & CE")
-                        f_addr = st.text_input("Adres Fabriek")
-                        f_epr = st.text_input("EPR Nummer")
-                        f_doc = st.text_input("CE DoC Referentie")
-                        f_ce = st.checkbox("CE Status Bevestigd", value=True)
-                    with c3:
-                        st.markdown("##### 3. Milieu (LCA)")
-                        f_co2 = st.number_input("Carbon footprint (kg CO2-eq)", min_value=0.0)
-                        f_meth = st.selectbox("CO2 Methode", ["EU PEF", "ISO 14067", "GREET"]) # NIEUW
-                        f_li = st.number_input("% Rec. Lithium", 0.0, 100.0)
-                        f_co = st.number_input("% Rec. Kobalt", 0.0, 100.0)
-                    with c4:
-                        st.markdown("##### 4. Levensduur & Audit")
-                        f_cycles = st.number_input("Cycli tot 80%", min_value=0) # NIEUW
-                        f_ret = st.number_input("Capaciteitsretentie (%)", 0, 100) # NIEUW
-                        f_last_v = st.date_input("Laatste verificatiedatum")
+            c1, c2, c3, c4 = st.columns(4)
+                with c1:
+                    st.markdown("##### 1. Identificatie")
+                    f_name = st.text_input("Productnaam (Publiek)")
+                    f_model = st.text_input("Model ID")
+                    f_batch = st.text_input("Batch / Serienummer")
+                    f_date = st.date_input("Productiedatum") # NIEUW
+                    f_weight = st.number_input("Gewicht (kg)", min_value=0.0) # NIEUW
+                with c2:
+                    st.markdown("##### 2. Producent & CE")
+                    f_addr = st.text_input("Adres Fabriek")
+                    f_epr = st.text_input("EPR Nummer")
+                    f_doc = st.text_input("CE DoC Referentie")
+                    f_ce = st.checkbox("CE Status Bevestigd", value=True)
+                with c3:
+                    st.markdown("##### 3. Milieu (LCA)")
+                    f_co2 = st.number_input("Carbon footprint (kg CO2-eq)", min_value=0.0)
+                    f_meth = st.selectbox("CO2 Methode", ["EU PEF", "ISO 14067", "GREET"]) # NIEUW
+                    f_li = st.number_input("% Rec. Lithium", 0.0, 100.0)
+                    f_co = st.number_input("% Rec. Kobalt", 0.0, 100.0)
+                with c4:
+                    st.markdown("##### 4. Levensduur & Audit")
+                    f_cycles = st.number_input("Cycli tot 80%", min_value=0) # NIEUW
+                    f_ret = st.number_input("Capaciteitsretentie (%)", 0, 100) # NIEUW
+                    f_last_v = st.date_input("Laatste verificatiedatum")
 
     st.divider()
     f_eol = st.text_area("End-of-life instructies (Hoe moet de consument dit inleveren?)") # NIEUW
@@ -278,4 +278,5 @@ else:
                     httpx.delete(f"{API_URL_BATTERIES}?id=eq.{item['id']}", headers=headers)
                     st.rerun()
             else: st.info("Nog geen producten geregistreerd.")
+
 
