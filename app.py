@@ -104,8 +104,33 @@ def get_data(url):
             return r.json() if r.status_code == 200 else []
     except: return []
 
-# --- 3. STYLING ---
-st.markdown(f"<style>.stApp {{ background-color: {COLOR_BG}; }} h1, h2, h3 {{ color: {COLOR_ACCENT} !important; }} .stButton button {{ background-color: {COLOR_ACCENT} !important; color: white !important; border-radius: 12px !important; }}</style>", unsafe_allow_html=True)
+# --- 3. STYLING (Gecombineerd: Kleuren + Verbergen interface elementen) ---
+st.markdown(f"""
+    <style>
+    /* Jouw bestaande kleuren en knoppen */
+    .stApp {{ background-color: {COLOR_BG}; }}
+    h1, h2, h3 {{ color: {COLOR_ACCENT} !important; }}
+    .stButton button {{ 
+        background-color: {COLOR_ACCENT} !important; 
+        color: white !important; 
+        border-radius: 12px !important; 
+    }}
+
+    /* VERBERG WITTE BALK: Verbergt de volledige header bovenin */
+    header {{ visibility: hidden; }}
+    [data-testid="stHeader"] {{ display: none; }}
+
+    /* VERBERG PIJLTJES: Verbergt de knop om de zijbalk in te klappen */
+    [data-testid="stSidebarCollapseButton"] {{
+        display: none;
+    }}
+
+    /* OPTIONEEL: Haalt de witruimte bovenin weg nu de balk weg is */
+    .block-container {{
+        padding-top: 2rem;
+    }}
+    </style>
+""", unsafe_allow_html=True)
 
 # --- 4. APP LOGICA ---
 q_params = st.query_params
@@ -336,4 +361,3 @@ else:
                                         success_count += 1
                         
                         st.success(f"Import voltooid! ✅ {success_count} producten toegevoegd aan het register.")
-                        st.balloons()
