@@ -52,15 +52,18 @@ if "id" in query_params:
             st.error("❌ Paspoort niet gevonden. Controleer de QR-code.")
             if st.button("Terug naar home"):
                 st.query_params.clear()
-
 else:
     # --- ADMIN PAGINA (Jouw dashboard om data in te voeren) ---
     st.title("🏗️ DPP Generator")
-    st.write("Gebruik dit formulier om een nieuwe batterij te registreren in de blockchain-database.")
+    st.write("Gebruik dit formulier om een nieuwe batterij te registreren.")
+
+    # We maken een variabele om de QR-data tijdelijk in op te slaan
+    qr_data = None
+    new_battery_name = ""
 
     with st.form("add_battery_form", clear_on_submit=True):
-        name = st.text_input("Product Naam / Modelnummer", placeholder="bv. Tesla Model 3 Long Range")
-        mfr = st.text_input("Fabrikant", placeholder="bv. Panasonic Energy")
+        name = st.text_input("Product Naam / Modelnummer", placeholder="bv. Tesla Model 3")
+        mfr = st.text_input("Fabrikant", placeholder="bv. Panasonic")
         
         c1, c2 = st.columns(2)
         with c1:
@@ -85,22 +88,34 @@ else:
                     if response.status_code == 201:
                         new_data = response.json()[0]
                         new_id = new_data['id']
+                        new_battery_name = name
                         
-                        st.balloons()
-                        st.success(f"Batterij succesvol geregistreerd! ID: {new_id}")
-
-                        # URL genereren (voor nu localhost, later je echte website)
-                        # Als je hem straks online zet, vervang je 'localhost:8501' door je eigen URL
-                        passport_url = f"http://localhost:8501/?id={new_id}"
+                        # De URL voor het paspoort
+                        # PAS DIT AAN NAAR JE EIGEN URL:
+                        base_url = "https://jouw-app-naam.streamlit.app" 
+                        passport_url = f"{base_url}/?id={new_id}"
                         
-                        # QR Code genereren
+                        # QR Code genereren en opslaan in een variabele
                         qr = qrcode.make(passport_url)
                         buf = BytesIO()
                         qr.save(buf, format="PNG")
+                        qr_data = buf.getvalue()
                         
-                        st.image(buf, caption=f"Scan deze code voor het paspoort van {name}")
-                        st.download_button("Download QR-code voor verpakking", buf.getvalue(), f"QR_{name}.png", "image/png")
+                        st.balloons()
+                        st.success(f"Batterij succesvol geregistreerd! ID: {new_id}")
                     else:
                         st.error(f"Database fout: {response.text}")
             else:
                 st.warning("Vul a.u.b. alle velden in.")
+
+    # --- QR CODE WEERGAVE (BUITEN HET FORMULIER) ---
+    if qr_data:
+        st.divider()
+        st.subheader(f"Download QR voor {new_battery_name}")
+        st.image(qr_data, caption="Scan deze code voor het paspoort")
+        st.download_button(
+            label="Download QR-code voor verpakking",
+            data=qr_data,
+            file_name=f"QR_{new_battery_name}.png",
+            mime="image/png"
+        )
