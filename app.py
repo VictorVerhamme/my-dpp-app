@@ -18,7 +18,7 @@ headers = {
 
 st.set_page_config(page_title="EU Battery Passport", page_icon="🔋", layout="wide")
 
-# Session state voor QR codes
+# Gebruik session_state om QR-data te onthouden
 if 'qr_data' not in st.session_state:
     st.session_state.qr_data = None
 if 'temp_name' not in st.session_state:
@@ -28,6 +28,7 @@ if 'temp_name' not in st.session_state:
 query_params = st.query_params
 
 if "id" in query_params:
+    # --- DEEL 1: PASPOORT PAGINA (Publiek toegankelijk) ---
     battery_id = query_params["id"]
     with httpx.Client() as client:
         resp = client.get(f"{API_URL}?id=eq.{battery_id}", headers=headers)
@@ -43,9 +44,22 @@ if "id" in query_params:
         else:
             st.error("Paspoort niet gevonden.")
 else:
+    # --- DEEL 2: ADMIN PAGINA (Beveiligd met wachtwoord) ---
+    
+    # HIER KOMT DE BEVEILIGING:
+    st.sidebar.title("🔐 Beheerder Login")
+    admin_password = st.sidebar.text_input("Voer wachtwoord in", type="password")
+    
+    # Vervang 'mijn-wachtwoord-123' door je eigen gekozen wachtwoord
+    if admin_password != "batterij2024": 
+        st.title("🔋 Digital Product Passport")
+        st.info("Welkom. Dit is de publieke hoofdpagina. Scan een QR-code op een product om het paspoort te bekijken of log in via de zijbalk om batterijen te beheren.")
+        st.stop() # De rest van de code hieronder wordt niet uitgevoerd als het wachtwoord fout is
+
+    # Als het wachtwoord GOED is, laten we dit zien:
     st.title("🏗️ DPP Management System")
     
-    tab1, tab2 = st.tabs(["Nieuwe Batterij", "Bulk Upload (CSV)"])
+    tab1, tab2, tab3 = st.tabs(["Nieuwe Batterij", "Bulk Upload", "Database Overzicht"])
 
     with tab1:
         st.subheader("Voeg één batterij toe")
@@ -54,7 +68,7 @@ else:
             mfr = st.text_input("Fabrikant")
             co2 = st.number_input("CO2 (kg)", min_value=0.0)
             recycled = st.slider("Gerecycled %", 0, 100, 25)
-            submit = st.form_submit_button("Opslaan in Database")
+            submit = st.form_submit_button("Opslaan")
 
             if submit and name and mfr:
                 payload = {"name": name, "manufacturer": mfr, "carbon_footprint": co2, "recycled_content": recycled}
@@ -69,50 +83,29 @@ else:
                         st.session_state.qr_data = buf.getvalue()
                         st.session_state.temp_name = name
                         st.success(f"Batterij opgeslagen! ID: {new_id}")
-                    else:
-                        st.error(f"Fout: {res.text}")
 
         if st.session_state.qr_data:
-            st.divider()
             st.image(st.session_state.qr_data, width=200)
-            st.download_button("Download QR Code", st.session_state.qr_data, f"QR_{st.session_state.temp_name}.png", "image/png")
+            st.download_button("Download QR Code", st.session_state.qr_data, f"QR_{st.session_state.temp_name}.png")
 
     with tab2:
         st.subheader("Bulk Import")
-        st.info("Zorg dat de eerste regel van je CSV deze koppen heeft: name, manufacturer, carbon_footprint, recycled_content")
-        
-        file = st.file_uploader("Upload je CSV bestand", type="csv")
+        file = st.file_uploader("Upload CSV", type="csv")
         if file:
-            # utf-8-sig haalt onzichtbare Excel-tekentjes (BOM) weg
             df = pd.read_csv(file, sep=None, engine='python', encoding='utf-8-sig')
-            
-            # Schoon kolomnamen op
             df.columns = [c.lower().strip() for c in df.columns]
-            
-            st.write("Gevonden kolommen in je bestand:", list(df.columns))
             st.dataframe(df.head())
-            
-            # Check of de cruciale kolom 'name' wel bestaat
-            if 'name' not in df.columns:
-                st.error("⚠️ Fout: Ik kan de kolom 'name' niet vinden. Staan de kolomnamen wel op de eerste regel?")
-            else:
-                if st.button("Start Bulk Import"):
-                    with httpx.Client() as client:
-                        success_count = 0
-                        for index, row in df.iterrows():
-                            try:
-                                payload = {
-                                    "name": str(row['name']),
-                                    "manufacturer": str(row.get('manufacturer', 'Onbekend')),
-                                    "carbon_footprint": float(row.get('carbon_footprint', 0)),
-                                    "recycled_content": int(row.get('recycled_content', 0))
-                                }
-                                res = client.post(API_URL, json=payload, headers=headers)
-                                if res.status_code == 201:
-                                    success_count += 1
-                                else:
-                                    st.warning(f"Rij {index+1} mislukt: {res.text}")
-                            except Exception as e:
-                                st.warning(f"Rij {index+1} overgeslagen: {e}")
-                                
-                        st.success(f"Klaar! {success_count} batterijen succesvol toegevoegd.")
+            if st.button("Start Import"):
+                with httpx.Client() as client:
+                    for _, row in df.iterrows():
+                        payload = {"name": str(row['name']), "manufacturer": str(row['manufacturer']), "carbon_footprint": float(row['carbon_footprint']), "recycled_content": int(row['recycled_content'])}
+                        client.post(API_URL, json=payload, headers=headers)
+                st.success("Import voltooid!")
+
+    with tab3:
+        st.subheader("Alle geregistreerde batterijen")
+        if st.button("Lijst vernieuwen"):
+            with httpx.Client() as client:
+                resp = client.get(API_URL, headers=headers)
+                if resp.status_code == 200:
+                    st.dataframe(pd.DataFrame(resp.json()))
