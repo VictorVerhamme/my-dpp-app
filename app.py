@@ -12,10 +12,10 @@ API_URL_COMPANIES = f"{SUPABASE_URL}/rest/v1/Companies"
 
 # Kleuren
 COLOR_ACCENT = "#8FAF9A"  # Saliegroen
-COLOR_BG_BROKEN_WHITE = "#FDFBF7" # De kleur van jouw logo achtergrond
+COLOR_BG_BROKEN_WHITE = "#FDFBF7" # Exacte kleur van jouw logo achtergrund
 
 # JOUW LOGO LINK
-LOGO_URL = "https://i.postimg.cc/sXHV1JHy/Chat-GPT-Image-28-dec-2025-14-50-31.png"
+LOGO_URL = "https://i.postimg.cc/D0K876Sm/Chat-GPT-Image-28-dec-2025-14-50-31-removebg-preview.png"
 
 st.set_page_config(page_title="Digital Product Passport", page_icon="🔋", layout="wide")
 
@@ -29,42 +29,40 @@ headers = {
 # --- 2. VERFIJNDE STYLING (CSS) ---
 st.markdown(f"""
     <style>
-    /* De hele app krijgt de kleur van het logo */
+    /* De hele app krijgt de kleur van het logo voor een naadloos effect */
     .stApp {{
         background-color: {COLOR_BG_BROKEN_WHITE}; 
     }}
     
-    /* Titels in Saliegroen */
     h1, h2, h3 {{ color: {COLOR_ACCENT} !important; font-family: 'Inter', sans-serif; }}
 
-    /* Inlog kaart zonder de groene balk */
+    /* Inlog container */
     .login-container {{
         display: flex;
         justify-content: center;
-        padding-top: 80px;
+        padding-top: 60px;
     }}
     
     .login-card {{
-        background-color: {COLOR_BG_BROKEN_WHITE}; /* Zelfde kleur als logo */
+        background-color: {COLOR_BG_BROKEN_WHITE};
         padding: 20px 40px;
-        border-radius: 0px; /* Strakker design */
         text-align: center;
-        max-width: 450px;
+        max-width: 500px;
         width: 100%;
     }}
     
-    /* Logo subtieler maken */
+    /* Logo formaat - verhoogd naar 160px voor meer impact */
     .login-logo-img {{
-        height: 120px; /* Kleiner en chiquer */
+        height: 160px; 
         width: auto;
-        margin-bottom: 20px;
+        margin-bottom: 25px;
     }}
 
-    /* Input velden styling */
+    /* Input velden subtieler */
     .stTextInput input, .stSelectbox div {{
-        background-color: transparent !important;
-        border: 1px solid #ddd !important;
-        border-radius: 5px !important;
+        background-color: white !important;
+        border: 1px solid #e0e0e0 !important;
+        border-radius: 8px !important;
     }}
 
     /* Button styling */
@@ -72,19 +70,25 @@ st.markdown(f"""
         background-color: {COLOR_ACCENT} !important;
         color: white !important;
         border: none !important;
-        padding: 10px 24px !important;
+        padding: 12px 24px !important;
         width: 100%;
-        border-radius: 5px !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        transition: opacity 0.3s;
+    }}
+    .stButton button:hover {{
+        opacity: 0.8;
     }}
 
-    /* Paspoort kaart (Consument) */
+    /* Paspoort kaart design */
     .passport-card {{
         background-color: white;
         padding: 50px;
-        border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-        max-width: 700px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+        max-width: 750px;
         margin: auto;
+        border-top: 6px solid {COLOR_ACCENT};
     }}
     </style>
 """, unsafe_allow_html=True)
@@ -108,20 +112,23 @@ if "id" in query_params:
         d = res[0]
         st.markdown(f"""
             <div class="passport-card">
-                <img src="{LOGO_URL}" style="height: 60px; margin-bottom: 30px;">
-                <h3 style="margin:0; opacity:0.6; font-size: 0.8em; letter-spacing: 2px;">PRODUCT PASPOORT</h3>
-                <h1 style="margin-top: 5px;">{d['name']}</h1>
-                <p style="font-size: 1.1em; color: #555;">Geverifieerde fabrikant: <strong>{d['manufacturer']}</strong></p>
-                <div style="display: flex; gap: 60px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 30px;">
-                    <div><p style="font-size:0.8em; margin:0; color:#888;">CO2 IMPACT</p><h2 style="margin-top:5px;">{d['carbon_footprint']} kg</h2></div>
-                    <div><p style="font-size:0.8em; margin:0; color:#888;">RECYCLED CONTENT</p><h2 style="margin-top:5px;">{d['recycled_content']}%</h2></div>
+                <img src="{LOGO_URL}" style="height: 80px; margin-bottom: 35px;">
+                <h3 style="margin:0; opacity:0.5; font-size: 0.85em; letter-spacing: 2px;">OFFICIEEL PRODUCT PASPOORT</h3>
+                <h1 style="margin-top: 8px; font-size: 2.5em;">{d['name']}</h1>
+                <p style="font-size: 1.2em; color: #444;">Geverifieerde fabrikant: <strong>{d['manufacturer']}</strong></p>
+                <div style="display: flex; gap: 70px; margin-top: 45px; border-top: 1px solid #f0f0f0; padding-top: 35px;">
+                    <div><p style="font-size:0.85em; margin:0; color:#999; letter-spacing: 1px;">CO2 IMPACT</p><h2 style="margin-top:5px;">{d['carbon_footprint']} kg</h2></div>
+                    <div><p style="font-size:0.85em; margin:0; color:#999; letter-spacing: 1px;">RECYCLED MATERIAAL</p><h2 style="margin-top:5px;">{d['recycled_content']}%</h2></div>
+                </div>
+                <div style="margin-top: 40px; padding: 15px; background: #fafafa; border-radius: 8px; font-size: 0.9em; color: #777;">
+                    ℹ️ Dit digitale paspoort is geverifieerd volgens EU-verordening 2023/1542.
                 </div>
             </div>
         """, unsafe_allow_html=True)
-    else: st.error("Paspoort niet gevonden.")
+    else: st.error("Paspoort niet gevonden in het register.")
 
 else:
-    # --- LOGIN ---
+    # --- LOGIN SCHERM ---
     if 'company' not in st.session_state: st.session_state.company = None
 
     if not st.session_state.company:
@@ -132,52 +139,78 @@ else:
             st.markdown(f'<img src="{LOGO_URL}" class="login-logo-img">', unsafe_allow_html=True)
             
             co_names = [c['name'] for c in companies]
-            selected_co = st.selectbox("Kies uw organisatie", options=co_names)
+            selected_co = st.selectbox("Selecteer uw organisatie", options=co_names)
             pwd_input = st.text_input("Wachtwoord", type="password")
             
-            if st.button("Inloggen"):
+            st.markdown('<br>', unsafe_allow_html=True)
+            if st.button("Inloggen op Portaal"):
                 match = next((c for c in companies if c['name'] == selected_co), None)
                 if match and match['password'] == pwd_input:
                     st.session_state.company = selected_co
                     st.rerun()
-                else: st.error("Controleer uw gegevens.")
+                else: st.error("Inloggegevens niet herkend.")
             
             st.markdown('</div></div>', unsafe_allow_html=True)
 
     else:
-        # --- DASHBOARD (Admin / Bedrijf) ---
+        # --- DASHBOARD (Bedrijven / SuperAdmin) ---
         user = st.session_state.company
-        st.sidebar.image(LOGO_URL, width=120)
-        st.sidebar.write(f"Ingelogd: **{user}**")
-        if st.sidebar.button("Uitloggen"):
+        st.sidebar.image(LOGO_URL, width=140)
+        st.sidebar.divider()
+        st.sidebar.write(f"Ingelogd als: **{user}**")
+        if st.sidebar.button("🚪 Uitloggen"):
             st.session_state.company = None
             st.rerun()
 
         if user == "SuperAdmin":
-            t1, t2 = st.tabs(["📊 Systeem Data", "🏢 Bedrijven"])
+            t1, t2 = st.tabs(["📊 Systeem Data", "🏢 Bedrijven Beheren"])
             with t1:
+                st.subheader("Totaaloverzicht alle producten")
                 all_bats = get_data(API_URL_BATTERIES)
-                if all_bats: st.dataframe(pd.DataFrame(all_bats), use_container_width=True)
+                if all_bats: st.dataframe(pd.DataFrame(all_bats), use_container_width=True, hide_index=True)
             with t2:
+                st.subheader("Actieve organisaties")
                 cos = get_data(API_URL_COMPANIES)
                 st.table(pd.DataFrame(cos)[['name', 'password']])
+                st.divider()
+                st.subheader("➕ Nieuwe klant toevoegen")
                 with st.form("new_co"):
-                    n, p = st.text_input("Naam"), st.text_input("Wachtwoord")
-                    if st.form_submit_button("Voeg Bedrijf Toe"):
+                    n, p = st.text_input("Naam Bedrijf"), st.text_input("Toegangscode")
+                    if st.form_submit_button("Account aanmaken"):
                         httpx.post(API_URL_COMPANIES, json={"name":n, "password":p}, headers=headers)
+                        st.success(f"{n} succesvol toegevoegd!")
                         st.rerun()
         else:
-            st.title(f"Portaal: {user}")
-            t1, t2 = st.tabs(["✨ Registratie", "📊 Voorraad"])
+            # Bedrijfs Dashboard
+            st.title(f"Welkom bij het portaal van {user}")
+            t1, t2, t3 = st.tabs(["✨ Registratie", "📊 Voorraad", "📂 Bulk Import"])
+            
             with t1:
-                with st.form("add"):
-                    name = st.text_input("Model")
-                    co2 = st.number_input("CO2 Impact", min_value=0.0)
-                    rec = st.slider("Recycled %", 0, 100, 20)
-                    if st.form_submit_button("Opslaan"):
+                with st.form("add", clear_on_submit=True):
+                    st.write("Registreer een nieuwe batterij voor het EU Paspoort")
+                    name = st.text_input("Model / Type")
+                    co2 = st.number_input("CO2 Impact (kg)", min_value=0.0)
+                    rec = st.slider("Percentage gerecycled materiaal", 0, 100, 20)
+                    if st.form_submit_button("Product Opslaan"):
                         payload = {"name": name, "manufacturer": user, "carbon_footprint": co2, "recycled_content": rec}
                         httpx.post(API_URL_BATTERIES, json=payload, headers=headers)
-                        st.success("Geregistreerd!")
+                        st.success("Het product is geregistreerd in de database.")
+            
             with t2:
+                st.subheader("Uw geregistreerde producten")
                 my_bats = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{user}")
-                if my_bats: st.dataframe(pd.DataFrame(my_bats), use_container_width=True)
+                if my_bats: st.dataframe(pd.DataFrame(my_bats)[['id', 'name', 'carbon_footprint', 'recycled_content']], use_container_width=True, hide_index=True)
+                else: st.info("U heeft nog geen producten in uw voorraad.")
+
+            with t3:
+                st.subheader("Meerdere producten tegelijk importeren")
+                file = st.file_uploader("Upload CSV-bestand", type="csv")
+                if file:
+                    df = pd.read_csv(file, sep=None, engine='python', encoding='utf-8-sig')
+                    df.columns = [c.lower().strip() for c in df.columns]
+                    if st.button("Start Import 🚀"):
+                        with httpx.Client() as client:
+                            for _, row in df.iterrows():
+                                payload = {"name": str(row['name']), "manufacturer": user, "carbon_footprint": float(row.get('carbon_footprint', 0)), "recycled_content": int(row.get('recycled_content', 0))}
+                                client.post(API_URL_BATTERIES, json=payload, headers=headers)
+                        st.success("Batch-import succesvol voltooid.")
