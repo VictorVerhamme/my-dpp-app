@@ -15,7 +15,7 @@ COLOR_ACCENT = "#8FAF9A"  # Saliegroen
 COLOR_BG_BROKEN_WHITE = "#FDFBF7" # Achtergrond van je logo
 
 # JOUW LOGO LINK
-LOGO_URL = "https://i.postimg.cc/D0K876Sm/Chat-GPT-Image-28-dec-2025-14-50-31-removebg-preview.png"
+LOGO_URL = "https://i.postimg.cc/sXHV1JHy/Chat-GPT-Image-28-dec-2025-14-50-31.png"
 
 # Layout op "wide" voor maximale controle over de kolommen
 st.set_page_config(page_title="Digital Product Passport", page_icon="🔋", layout="wide")
@@ -70,24 +70,16 @@ st.markdown(f"""
     }}
 
     /* De inlogknop - Gecentreerd en compact */
-    /* 1. Target de container van de knop om te centreren */
-    .stButton {
-        display: flex;
-        justify-content: center;
-    }
-
-    /* 2. De knop zelf */
-    .stButton button {
-        background-color: #8FAF9A !important;
+    .stButton button {{
+        background-color: {COLOR_ACCENT} !important;
         color: white !important;
         border: none !important;
         height: 50px !important;
-        width: 100% !important; /* Of verander dit naar bijv. 200px als je een kleine knop wilt */
-        max-width: 400px;       /* Zorgt dat hij nooit breder wordt dan je velden */
+        width: 100% !important;
         font-weight: 600 !important;
         border-radius: 12px !important;
         margin-top: 10px !important;
-    }
+    }}
     
     .stButton button:hover {{
         opacity: 0.9;
@@ -257,5 +249,3 @@ else:
                                 payload = {"name": str(row['name']), "manufacturer": user, "carbon_footprint": float(row.get('carbon_footprint', 0)), "recycled_content": int(row.get('recycled_content', 0))}
                                 client.post(API_URL_BATTERIES, json=payload, headers=headers)
                         st.success("Batch-import voltooid!")
-
-
