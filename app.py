@@ -336,6 +336,39 @@ else:
                     with col_right:
                         st.markdown("### 🛠️ Systeembeheer")
                         
+                        # --- SECTIE: NIEUWE PARTNER TOEVOEGEN ---
+                        st.markdown("---")
+                        st.write("➕ **Voeg een nieuwe Partner toe**")
+                        
+                        with st.form("add_company_form", clear_on_submit=True):
+                            new_comp_name = st.text_input("Naam van het bedrijf")
+                            new_comp_pass = st.text_input("Wachtwoord voor dit bedrijf", type="password")
+                            
+                            if st.form_submit_button("Partner Registreren", use_container_width=True):
+                                if new_comp_name and new_comp_pass:
+                                    # Controleer of het bedrijf al bestaat
+                                    check_comp = get_data(f"{API_URL_COMPANIES}?name=eq.{new_comp_name}")
+                                    
+                                    if check_comp:
+                                        st.error(f"❌ Bedrijf '{new_comp_name}' bestaat al.")
+                                    else:
+                                        # Payload voor het nieuwe bedrijf
+                                        new_payload = {
+                                            "name": new_comp_name,
+                                            "password": new_comp_pass,
+                                            "created_at": datetime.now().isoformat()
+                                        }
+                                        
+                                        with httpx.Client() as client:
+                                            resp = client.post(API_URL_COMPANIES, json=new_payload, headers=headers)
+                                            if resp.status_code in [200, 201]:
+                                                st.success(f"✅ Bedrijf '{new_comp_name}' succesvol toegevoegd!")
+                                                st.rerun()
+                                            else:
+                                                st.error(f"❌ Fout bij toevoegen: {resp.text}")
+                                else:
+                                    st.warning("Vul a.u.b. alle velden in.")
+                        
                         # --- NIEUW: BEDRIJF VERWIJDEREN SECTIE ---
                         st.markdown("---")
                         st.write("🗑️ **Verwijder een Partner**")
@@ -366,5 +399,3 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
-                        if st.button("🔄 Forceer Systeem Verversing"):
-                            st.rerun()
