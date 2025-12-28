@@ -61,7 +61,7 @@ def generate_certificate(data):
     # 2. HEADER - NU VOLLEDIG ZWART
     pdf.set_font("Arial", 'B', 18)
     pdf.set_text_color(0, 0, 0) # Zwart (was saliegroen)
-    pdf.cell(200, 15, txt="EU Digital Product Passport - Compliance Audit", ln=True, align='L')
+    pdf.cell(200, 15, txt="EU Digital Product Passport", ln=True, align='L')
     
     # Audit Datum - Nu in Zwart
     pdf.set_font("Arial", 'I', 10)
@@ -88,7 +88,13 @@ def generate_certificate(data):
         ("CO2 Methode", data.get('carbon_method')),
         ("EPR Nummer", data.get('epr_number')),
         ("CE DoC Referentie", data.get('ce_doc_reference')),
+        ("CE Module", data.get('ce_module')),
         ("Recycled Li (%)", data.get('rec_lithium_pct')),
+        ("Recycled Co (%)", data.get('rec_cobalt_pct')),
+        ("Recycled Ni (%)", data.get('rec_nickel_pct')),
+        ("Recycled Pb (%)", data.get('rec_lead_pct')),
+        ("Laadcycli tot 80%", data.get('cycles_to_80')),
+        ("Capaciteitsretentie (%)", data.get('capacity_retention_pct')),
         ("State of Health (SoH)", f"{data.get('soh_pct')}%"),
         ("Geregistreerd door", data.get('modified_by')),
         ("Registratie Datum", data.get('registration_date'))
@@ -335,4 +341,5 @@ else:
                         
                         if st.button("🔄 Forceer Systeem Verversing"):
                             st.rerun()
+
 
