@@ -182,40 +182,51 @@ else:
     if not st.session_state.company:
         if st.session_state.auth_mode == "landing":
             # --- STAP A: DE LANDING PAGE ---
-            st.markdown('<div style="text-align:center; padding-top:5vh;">', unsafe_allow_html=True)
-            st.image(LOGO_URL, width=450) # Groot logo als blikvanger
-            st.title("EU Digital Product Passport Platform")
-            st.markdown(f"""
-                <h3 style='color: {COLOR_ACCENT};'>De toekomst van batterij-compliance en traceerbaarheid.</h3>
-                <p style='font-size: 1.2rem; max-width: 800px; margin: 0 auto; color: #555;'>
-                    Welkom bij het centrale portaal voor de EU-batterijverordening 2023/1542. 
-                    Wij helpen fabrikanten en importeurs bij het genereren, beheren en delen van digitale productpaspoorten. 
-                    Onze cloud-gebaseerde oplossing zorgt voor volledige transparantie in de supply chain en 
-                    vereenvoudigt de communicatie met consumenten en toezichthouders.
-                </p>
-                <br>
-            """, unsafe_allow_html=True)
-            
-            # Grote knop om naar het inlogscherm te gaan
-            if st.button("Ga naar het Portaal ➔", use_container_width=True):
-                st.session_state.auth_mode = "login"
-                st.rerun()
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            
-            # Optioneel: drie kleine info-kolommen
-            st.divider()
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                st.markdown("##### ✅ Volledig Conform")
-                st.write("Voldoet aan alle 8 pijlers van de nieuwe EU-regelgeving.")
-            with c2:
-                st.markdown("##### 📊 Real-time Data")
-                st.write("Direct inzicht in CO₂-impact en recycling-efficiëntie.")
-            with c3:
-                st.markdown("##### 🔐 Veilig Beheer")
-                st.write("Beveiligde toegang voor partners en inspectie-autoriteiten.")
+            # We gebruiken kolommen voor marges aan de zijkant (Layout: 1-3-1)
+            _, main_col, _ = st.columns([1, 3, 1]) 
 
+            with main_col:
+                st.image(LOGO_URL, width=350)
+                
+                # Hoofdtekst links uitgelijnd
+                st.markdown(f"""
+                    <div style="text-align: left;">
+                        <h1 style='color: {COLOR_ACCENT}; margin-bottom: 0;'>EU Digital Product Passport</h1>
+                        <h3 style='color: {COLOR_ACCENT}; margin-top: 0;'>De toekomst van batterij-compliance.</h3>
+                        <p style='font-size: 1.1rem; color: #555; line-height: 1.6;'>
+                            Welkom bij het centrale portaal voor de <b>EU-batterijverordening 2023/1542</b>. <br><br>
+                            Wij helpen fabrikanten en importeurs bij het genereren, beheren en delen van digitale productpaspoorten. 
+                            Onze cloud-gebaseerde oplossing zorgt voor volledige transparantie in de supply chain en 
+                            vereenvoudigt de communicatie met consumenten en toezichthouders.
+                        </p>
+                    </div>
+                    <br>
+                """, unsafe_allow_html=True)
+                
+                # De Knop: Beperkt in breedte door een sub-kolom
+                btn_col, _ = st.columns([1, 2]) 
+                with btn_col:
+                    if st.button("Ga naar het Portaal ➔"):
+                        st.session_state.auth_mode = "login"
+                        st.rerun()
+
+                st.divider()
+
+                # Informatie Kolommen: Nu ook links uitgelijnd binnen de main_col
+                info_c1, info_c2, info_c3 = st.columns(3)
+                
+                with info_c1:
+                    st.markdown(f"##### <span style='color: {COLOR_ACCENT};'>✅ Volledig Conform</span>", unsafe_allow_html=True)
+                    st.write("Voldoet aan alle 8 pijlers van de nieuwe EU-batterijverordening.")
+                
+                with info_c2:
+                    st.markdown(f"##### <span style='color: {COLOR_ACCENT};'>📊 Real-time Data</span>", unsafe_allow_html=True)
+                    st.write("Direct inzicht in CO₂-impact en recycling-efficiëntie.")
+                
+                with info_c3:
+                    st.markdown(f"##### <span style='color: {COLOR_ACCENT};'>🔐 Veilig Beheer</span>", unsafe_allow_html=True)
+                    st.write("Beveiligde toegang voor partners en inspectie-autoriteiten.")
+                    
         elif st.session_state.auth_mode == "login":
             # --- STAP B: HET INLOGSCHERM ---
             st.markdown('<div class="login-container">', unsafe_allow_html=True)
@@ -436,4 +447,5 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
