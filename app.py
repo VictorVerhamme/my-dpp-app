@@ -17,7 +17,7 @@ API_URL_COMPANIES = f"{SUPABASE_URL}/rest/v1/Companies"
 
 COLOR_ACCENT = "#8FAF9A"  # Saliegroen
 COLOR_BG = "#FDFBF7"      # Broken White
-LOGO_URL = "https://i.postimg.cc/D0K876Sm/Chat-GPT-Image-28-dec-2025-14-50-31-removebg-preview.png"
+LOGO_URL = "https://i.postimg.cc/R0QTmRQr/Logo-V.png"
 
 st.set_page_config(page_title="DPP Compliance Master 2025", page_icon="🔋", layout="wide")
 
@@ -285,3 +285,4 @@ else:
                         httpx.delete(f"{API_URL_BATTERIES}?id=eq.{item['id']}", headers=headers)
                         st.rerun()
             else: st.info("Nog geen producten geregistreerd.")
+
