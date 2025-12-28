@@ -4,7 +4,7 @@ import httpx
 import pandas as pd
 from io import BytesIO
 
-# --- CONFIGURATIE ---
+# --- 1. CONFIGURATIE ---
 SUPABASE_URL = "https://nihebcwfjtezkufbxcnq.supabase.co"
 SUPABASE_KEY = "sb_publishable_GYqO17G-B2DkS9j3TW1nHQ_BiyJOHJy"
 API_URL_BATTERIES = f"{SUPABASE_URL}/rest/v1/Batteries"
@@ -22,106 +22,157 @@ headers = {
     "Prefer": "return=representation"
 }
 
-# --- STYLING ---
+# --- 2. STYLING ---
 st.markdown(f"""
     <style>
     .stApp {{ background-color: #fdfdfd; }}
     h1, h2, h3 {{ color: {COLOR_ACCENT} !important; }}
-    .passport-card {{ background-color: {COLOR_BG_CARD}; border-radius: 12px; padding: 40px; border-left: 8px solid {COLOR_ACCENT}; }}
-    .login-box {{ background-color: {COLOR_BG_CARD}; padding: 30px; border-radius: 15px; border: 1px solid {COLOR_ACCENT}; }}
+    .login-box {{ 
+        background-color: {COLOR_BG_CARD}; 
+        padding: 40px; 
+        border-radius: 20px; 
+        border: 1px solid {COLOR_ACCENT};
+    }}
+    .green-header {{
+        background-color: {COLOR_ACCENT};
+        height: 40px;
+        border-radius: 10px 10px 0 0;
+        margin: -40px -40px 30px -40px;
+    }}
+    .passport-card {{
+        background-color: {COLOR_BG_CARD};
+        border-radius: 12px;
+        padding: 30px;
+        border-left: 8px solid {COLOR_ACCENT};
+    }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- FUNCTIE: HAAL BEDRIJVEN OP ---
-def get_all_companies():
+# --- 3. HELPERS ---
+def get_data(url):
     with httpx.Client() as client:
-        resp = client.get(API_URL_COMPANIES, headers=headers)
-        return resp.json() if resp.status_code == 200 else []
+        r = client.get(url, headers=headers)
+        return r.json() if r.status_code == 200 else []
 
-# --- LOGICA ---
+# --- 4. LOGICA ---
+if 'qr_data' not in st.session_state: st.session_state.qr_data = None
+if 'temp_name' not in st.session_state: st.session_state.temp_name = ""
+
 query_params = st.query_params
 
 if "id" in query_params:
-    # --- CONSUMENTEN VIEW ---
-    battery_id = query_params["id"]
-    with httpx.Client() as client:
-        resp = client.get(f"{API_URL_BATTERIES}?id=eq.{battery_id}", headers=headers)
-        if resp.status_code == 200 and len(resp.json()) > 0:
-            data = resp.json()[0]
-            st.markdown(f"""
-                <div class="passport-card">
-                    <p style="color:{COLOR_ACCENT}; font-weight:bold; margin-bottom:0;">OFFICIEEL EU PASPOORT</p>
-                    <h1>🔋 {data['name']}</h1>
-                    <p>Fabrikant: <strong>{data['manufacturer']}</strong></p>
-                    <hr style="border: 0.5px solid {COLOR_ACCENT}; opacity: 0.3;">
-                    <div style="display: flex; gap: 50px; margin-top: 20px;">
-                        <div><p style="margin:0; font-size: 0.8em;">CO2 IMPACT</p><h2>{data['carbon_footprint']} kg</h2></div>
-                        <div><p style="margin:0; font-size: 0.8em;">RECYCLED</p><h2>{data['recycled_content']}%</h2></div>
-                    </div>
+    # --- PASPOORT VIEW (PUBLIEK) ---
+    res = get_data(f"{API_URL_BATTERIES}?id=eq.{query_params['id']}")
+    if res:
+        d = res[0]
+        st.markdown(f"""
+            <div class="passport-card">
+                <p style="color:{COLOR_ACCENT}; font-weight:bold; margin-bottom:0;">OFFICIEEL EU PASPOORT</p>
+                <h1>🔋 {d['name']}</h1>
+                <p>Geregistreerde Fabrikant: <strong>{d['manufacturer']}</strong></p>
+                <hr style="opacity:0.2;">
+                <div style="display: flex; gap: 40px;">
+                    <div><p style="font-size:0.8em; margin:0;">CO2 IMPACT</p><h3>{d['carbon_footprint']} kg</h3></div>
+                    <div><p style="font-size:0.8em; margin:0;">GERECYCLED</p><h3>{d['recycled_content']}%</h3></div>
                 </div>
-            """, unsafe_allow_html=True)
+            </div>
+        """, unsafe_allow_html=True)
+    else: st.error("Paspoort niet gevonden.")
 
 else:
-    # --- LOGIN LOGICA ---
-    if 'logged_in_company' not in st.session_state:
-        st.session_state.logged_in_company = None
+    # --- LOGIN & DASHBOARD ---
+    if 'company' not in st.session_state: st.session_state.company = None
 
-    if not st.session_state.logged_in_company:
-        companies = get_all_companies()
-        company_names = [c['name'] for c in companies]
-        
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown('<div class="login-box">', unsafe_allow_html=True)
+    if not st.session_state.company:
+        companies = get_data(API_URL_COMPANIES)
+        _, col, _ = st.columns([1, 2, 1])
+        with col:
+            st.markdown('<div class="login-box"><div class="green-header"></div>', unsafe_allow_html=True)
             st.subheader("Bedrijfs Portaal")
-            selected_co = st.selectbox("Selecteer uw bedrijf", options=company_names)
+            co_names = [c['name'] for c in companies]
+            selected_co = st.selectbox("Selecteer uw bedrijf", options=co_names)
             pwd_input = st.text_input("Wachtwoord", type="password")
             if st.button("Inloggen"):
-                # Check wachtwoord in de database lijst
                 match = next((c for c in companies if c['name'] == selected_co), None)
                 if match and match['password'] == pwd_input:
-                    st.session_state.logged_in_company = selected_co
+                    st.session_state.company = selected_co
                     st.rerun()
-                else:
-                    st.error("Onjuist wachtwoord")
+                else: st.error("Onjuist wachtwoord")
             st.markdown('</div>', unsafe_allow_html=True)
     else:
-        # --- DASHBOARD ---
-        user = st.session_state.logged_in_company
+        user = st.session_state.company
         st.sidebar.title(f"👤 {user}")
         if st.sidebar.button("Uitloggen"):
-            st.session_state.logged_in_company = None
+            st.session_state.company = None
             st.rerun()
 
-        # SUPER ADMIN VS GEWOON BEDRIJF
         if user == "SuperAdmin":
-            tabs = st.tabs(["📊 Global Overzicht", "🏢 Bedrijven Beheren", "✨ Nieuwe Batterij"])
-            
-            with tabs[0]:
-                st.subheader("Alle batterijen van alle bedrijven")
-                with httpx.Client() as client:
-                    resp = client.get(API_URL_BATTERIES, headers=headers)
-                    if resp.status_code == 200:
-                        st.dataframe(pd.DataFrame(resp.json()), use_container_width=True)
-
-            with tabs[1]:
-                st.subheader("Bedrijfsbeheer")
-                # Lijst van bedrijven en wachtwoorden
-                companies = get_all_companies()
-                st.table(pd.DataFrame(companies)[['name', 'password']])
+            # --- SUPERADMIN INTERFACE ---
+            t1, t2 = st.tabs(["📊 Global Data", "🏢 Beheer Bedrijven"])
+            with t1:
+                st.subheader("Alle batterijen in het systeem")
+                all_bats = get_data(API_URL_BATTERIES)
+                if all_bats:
+                    df = pd.DataFrame(all_bats)
+                    st.dataframe(df[['id', 'name', 'manufacturer', 'carbon_footprint']], use_container_width=True)
+            with t2:
+                st.subheader("Bedrijven & Wachtwoorden")
+                cos = get_data(API_URL_COMPANIES)
+                st.table(pd.DataFrame(cos)[['name', 'password']])
                 
                 st.divider()
                 st.subheader("➕ Nieuw Bedrijf Toevoegen")
-                with st.form("add_company"):
-                    new_co_name = st.text_input("Naam Bedrijf")
-                    new_co_pwd = st.text_input("Wachtwoord voor dit bedrijf")
+                with st.form("new_co"):
+                    n = st.text_input("Naam")
+                    p = st.text_input("Wachtwoord")
                     if st.form_submit_button("Opslaan"):
                         with httpx.Client() as client:
-                            client.post(API_URL_COMPANIES, json={"name": new_co_name, "password": new_co_pwd}, headers=headers)
-                        st.success(f"{new_co_name} is toegevoegd!")
+                            client.post(API_URL_COMPANIES, json={"name":n, "password":p}, headers=headers)
                         st.rerun()
-
         else:
-            # Dashboard voor gewone bedrijven
-            tabs = st.tabs(["✨ Nieuwe Batterij", "📊 Mijn Voorraad", "📂 Bulk Upload"])
-            # ... (Rest van de bekende code voor batterijen toevoegen)
+            # --- GEWOON BEDRIJF DASHBOARD (Panasonic, Tesla, etc.) ---
+            st.title(f"Dashboard: {user}")
+            t1, t2, t3 = st.tabs(["✨ Nieuwe Batterij", "📊 Mijn Voorraad", "📂 Bulk Upload"])
+
+            with t1:
+                with st.form("add_bat", clear_on_submit=True):
+                    name = st.text_input("Modelnaam")
+                    co2 = st.number_input("CO2 (kg)", min_value=0.0)
+                    recycled = st.slider("Gerecycled %", 0, 100, 25)
+                    if st.form_submit_button("Registreer"):
+                        payload = {"name": name, "manufacturer": user, "carbon_footprint": co2, "recycled_content": recycled}
+                        with httpx.Client() as client:
+                            res = client.post(API_URL_BATTERIES, json=payload, headers=headers)
+                            if res.status_code == 201:
+                                new_id = res.json()[0]['id']
+                                passport_url = f"https://digitalpassport.streamlit.app/?id={new_id}"
+                                qr = qrcode.make(passport_url)
+                                buf = BytesIO()
+                                qr.save(buf, format="PNG")
+                                st.session_state.qr_data = buf.getvalue()
+                                st.session_state.temp_name = name
+                                st.success(f"Batterij toegevoegd! ID: {new_id}")
+
+                if st.session_state.qr_data:
+                    st.image(st.session_state.qr_data, width=200)
+                    st.download_button("Download QR", st.session_state.qr_data, f"QR_{st.session_state.temp_name}.png")
+
+            with t2:
+                st.subheader(f"Geregistreerd door {user}")
+                my_bats = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{user}")
+                if my_bats:
+                    st.dataframe(pd.DataFrame(my_bats)[['id', 'name', 'carbon_footprint', 'recycled_content']], use_container_width=True)
+                else: st.info("Nog geen batterijen geregistreerd.")
+
+            with t3:
+                st.subheader("Bulk Import")
+                file = st.file_uploader("Upload CSV", type="csv")
+                if file:
+                    df = pd.read_csv(file, sep=None, engine='python', encoding='utf-8-sig')
+                    df.columns = [c.lower().strip() for c in df.columns]
+                    if st.button("Start Import"):
+                        with httpx.Client() as client:
+                            for _, row in df.iterrows():
+                                payload = {"name": str(row['name']), "manufacturer": user, "carbon_footprint": float(row.get('carbon_footprint', 0)), "recycled_content": int(row.get('recycled_content', 0))}
+                                client.post(API_URL_BATTERIES, json=payload, headers=headers)
+                        st.success("Import klaar!")
