@@ -14,7 +14,7 @@ API_URL_COMPANIES = f"{SUPABASE_URL}/rest/v1/Companies"
 
 COLOR_ACCENT = "#8FAF9A"
 COLOR_BG_BROKEN_WHITE = "#FDFBF7"
-LOGO_URL = "https://i.postimg.cc/sXHV1JHy/Chat-GPT-Image-28-dec-2025-14-50-31.png"
+LOGO_URL = "https://i.postimg.cc/D0K876Sm/Chat-GPT-Image-28-dec-2025-14-50-31-removebg-preview.png"
 
 st.set_page_config(page_title="DPP Compliance Engine", page_icon="🔋", layout="wide")
 
@@ -168,3 +168,4 @@ else:
                     st.image(make_qr(item['id']), width=180, caption="Scanbare QR-Code")
             else:
                 st.info("Nog geen producten in de voorraad.")
+
