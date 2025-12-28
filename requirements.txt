@@ -1,3 +1,5 @@
 streamlit
 httpx
+
 qrcode[pil]
+pandas
