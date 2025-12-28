@@ -42,17 +42,41 @@ def make_qr(id):
 def generate_certificate(data):
     pdf = FPDF()
     pdf.add_page()
+    
+    # 1. LOGO TOEVOEGEN (Rechtsboven)
+    # We downloaden het logo kortstondig om het in de PDF te kunnen plaatsen
+    try:
+        with httpx.Client() as client:
+            logo_resp = client.get(LOGO_URL)
+            if logo_resp.status_code == 200:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_logo:
+                    tmp_logo.write(logo_resp.content)
+                    tmp_logo_path = tmp_logo.name
+                # Plaats logo rechtsboven: x=150, y=10, breedte=40
+                pdf.image(tmp_logo_path, x=150, y=10, w=40)
+                os.remove(tmp_logo_path)
+    except:
+        pass # Ga door zonder logo als de download faalt om crashes te voorkomen
+
+    # 2. HEADER - NU VOLLEDIG ZWART
     pdf.set_font("Arial", 'B', 18)
-    pdf.set_text_color(143, 175, 154)
-    pdf.cell(200, 15, txt="EU Digital Product Passport - Compliance Audit", ln=True, align='C')
-    pdf.ln(5)
+    pdf.set_text_color(0, 0, 0) # Zwart (was saliegroen)
+    pdf.cell(200, 15, txt="EU Digital Product Passport - Compliance Audit", ln=True, align='L')
     
+    # Audit Datum - Nu in Zwart
+    pdf.set_font("Arial", 'I', 10)
+    pdf.set_text_color(0, 0, 0) # Zwart (was grijs)
+    pdf.cell(200, 10, txt=f"Gegenereerd op: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align='L')
+    pdf.ln(10)
+    
+    # 3. TABEL SECTIE
     pdf.set_fill_color(245, 247, 246)
-    pdf.set_font("Arial", 'B', 10)
-    pdf.cell(190, 8, txt="Wettelijke Productidentificatie & Audit Trail", ln=True, fill=True)
+    pdf.set_font("Arial", 'B', 11)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(190, 10, txt="Wettelijke Productidentificatie & Audit Trail", ln=True, align='L', fill=True)
     
-    pdf.set_font("Arial", '', 8)
-    # Alle velden in het PDF document
+    pdf.set_font("Arial", '', 9)
+    # Mapping van alle velden
     fields = [
         ("Batterij UUID", data.get('battery_uid')),
         ("Naam / Model", data.get('name')),
@@ -64,37 +88,36 @@ def generate_certificate(data):
         ("CO2 Methode", data.get('carbon_method')),
         ("EPR Nummer", data.get('epr_number')),
         ("CE DoC Referentie", data.get('ce_doc_reference')),
-        ("CE Module", data.get('ce_module')),
         ("Recycled Li (%)", data.get('rec_lithium_pct')),
-        ("Recycled Co (%)", data.get('rec_cobalt_pct')),
-        ("Recycled Ni (%)", data.get('rec_nickel_pct')),
-        ("Recycled Pb (%)", data.get('rec_lead_pct')),
-        ("Laadcycli tot 80%", data.get('cycles_to_80')),
-        ("Capaciteitsretentie (%)", data.get('capacity_retention_pct')),
         ("State of Health (SoH)", f"{data.get('soh_pct')}%"),
         ("Geregistreerd door", data.get('modified_by')),
         ("Registratie Datum", data.get('registration_date'))
     ]
     
+    # Velden tekenen in zwart
     for label, val in fields:
-        pdf.cell(70, 6, txt=f"{label}:", border=1)
-        pdf.cell(120, 6, txt=str(val or 'N/A'), border=1, ln=True)
+        pdf.set_text_color(0, 0, 0) # Zekerheid dat tekst zwart is
+        pdf.cell(70, 7, txt=f"{label}:", border=1)
+        pdf.cell(120, 7, txt=str(val or 'N/A'), border=1, ln=True)
 
-    pdf.ln(4)
-    pdf.set_font("Arial", 'B', 9)
-    pdf.cell(190, 7, txt="End-of-Life Instructies voor de consument", ln=True, fill=True)
-    pdf.set_font("Arial", '', 8)
-    pdf.multi_cell(190, 5, txt=str(data.get('eol_instructions') or "Niet gespecificeerd."), border=1)
+    pdf.ln(5)
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(190, 8, txt="End-of-Life Instructies voor de consument", ln=True, fill=True)
+    pdf.set_font("Arial", '', 9)
+    pdf.multi_cell(190, 6, txt=str(data.get('eol_instructions') or "Niet gespecificeerd."), border=1)
 
+    # 4. QR CODE ONDERAAN
     qr_img_bytes = make_qr(data['id'])
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
-        tmp.write(qr_img_bytes)
-        tmp_path = tmp.name
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_qr:
+        tmp_qr.write(qr_img_bytes)
+        tmp_qr_path = tmp_qr.name
     try:
-        pdf.ln(5)
-        pdf.image(tmp_path, x=85, y=pdf.get_y(), w=40)
+        pdf.ln(10)
+        # QR code centreren
+        pdf.image(tmp_qr_path, x=85, y=pdf.get_y(), w=40)
     finally:
-        if os.path.exists(tmp_path): os.remove(tmp_path)
+        if os.path.exists(tmp_qr_path): os.remove(tmp_qr_path)
+        
     return pdf.output(dest='S').encode('latin-1')
 
 def get_data(url):
@@ -312,3 +335,4 @@ else:
                         
                         if st.button("🔄 Forceer Systeem Verversing"):
                             st.rerun()
+
