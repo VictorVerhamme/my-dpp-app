@@ -79,34 +79,40 @@ else:
 
     with tab2:
         st.subheader("Bulk Import")
-        st.info("Tip: Gebruik kolomnamen 'name', 'manufacturer', 'carbon_footprint' en 'recycled_content'.")
+        st.info("Zorg dat de eerste regel van je CSV deze koppen heeft: name, manufacturer, carbon_footprint, recycled_content")
         
         file = st.file_uploader("Upload je CSV bestand", type="csv")
         if file:
-            # Slim inlezen: detecteert automatisch of het , of ; is
-            df = pd.read_csv(file, sep=None, engine='python')
+            # utf-8-sig haalt onzichtbare Excel-tekentjes (BOM) weg
+            df = pd.read_csv(file, sep=None, engine='python', encoding='utf-8-sig')
             
-            # Schoon de kolomnamen op (geen spaties, alles kleine letters)
+            # Schoon kolomnamen op
             df.columns = [c.lower().strip() for c in df.columns]
             
-            st.write("Gevonden data:")
+            st.write("Gevonden kolommen in je bestand:", list(df.columns))
             st.dataframe(df.head())
             
-            if st.button("Start Bulk Import"):
-                with httpx.Client() as client:
-                    success_count = 0
-                    for _, row in df.iterrows():
-                        try:
-                            payload = {
-                                "name": str(row['name']),
-                                "manufacturer": str(row['manufacturer']),
-                                "carbon_footprint": float(row['carbon_footprint']),
-                                "recycled_content": int(row['recycled_content'])
-                            }
-                            res = client.post(API_URL, json=payload, headers=headers)
-                            if res.status_code == 201:
-                                success_count += 1
-                        except Exception as e:
-                            st.warning(f"Rij overgeslagen door fout: {e}")
-                            
-                st.success(f"Klaar! {success_count} batterijen toegevoegd.")
+            # Check of de cruciale kolom 'name' wel bestaat
+            if 'name' not in df.columns:
+                st.error("⚠️ Fout: Ik kan de kolom 'name' niet vinden. Staan de kolomnamen wel op de eerste regel?")
+            else:
+                if st.button("Start Bulk Import"):
+                    with httpx.Client() as client:
+                        success_count = 0
+                        for index, row in df.iterrows():
+                            try:
+                                payload = {
+                                    "name": str(row['name']),
+                                    "manufacturer": str(row.get('manufacturer', 'Onbekend')),
+                                    "carbon_footprint": float(row.get('carbon_footprint', 0)),
+                                    "recycled_content": int(row.get('recycled_content', 0))
+                                }
+                                res = client.post(API_URL, json=payload, headers=headers)
+                                if res.status_code == 201:
+                                    success_count += 1
+                                else:
+                                    st.warning(f"Rij {index+1} mislukt: {res.text}")
+                            except Exception as e:
+                                st.warning(f"Rij {index+1} overgeslagen: {e}")
+                                
+                        st.success(f"Klaar! {success_count} batterijen succesvol toegevoegd.")
