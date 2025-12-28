@@ -51,9 +51,9 @@ st.markdown(f"""
         width: 100%;
     }}
     
-    /* Logo formaat - verhoogd naar 160px voor meer impact */
+    /* Logo formaat - verhoogd naar 225px voor meer impact */
     .login-logo-img {{
-        height: 160px; 
+        height: 225px; 
         width: auto;
         margin-bottom: 25px;
     }}
@@ -214,3 +214,4 @@ else:
                                 payload = {"name": str(row['name']), "manufacturer": user, "carbon_footprint": float(row.get('carbon_footprint', 0)), "recycled_content": int(row.get('recycled_content', 0))}
                                 client.post(API_URL_BATTERIES, json=payload, headers=headers)
                         st.success("Batch-import succesvol voltooid.")
+
