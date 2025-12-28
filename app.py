@@ -190,7 +190,7 @@ else:
     
     else:
         user = st.session_state.company
-        st.sidebar.image(LOGO_URL, width=120)
+        st.sidebar.image(LOGO_URL, width=350)
         st.sidebar.title(f"Welkom, {user}")
         if st.sidebar.button("Uitloggen"):
             st.session_state.company = None
@@ -285,3 +285,4 @@ else:
                         httpx.delete(f"{API_URL_BATTERIES}?id=eq.{item['id']}", headers=headers)
                         st.rerun()
             else: st.info("Nog geen producten geregistreerd.")
+
