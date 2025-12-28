@@ -51,9 +51,8 @@ st.markdown(f"""
     }}
     /* Styling voor het logo in de header */
     .header-logo {{
-        height: 30px;
+        height: 60px;
         width: auto;
-        filter: brightness(0) invert(1); /* Maakt elk zwart icoon wit */
     }}
     .passport-card {{
         background-color: {COLOR_BG_CARD};
@@ -193,5 +192,6 @@ else:
                                 payload = {"name": str(row['name']), "manufacturer": user, "carbon_footprint": float(row.get('carbon_footprint', 0)), "recycled_content": int(row.get('recycled_content', 0))}
                                 client.post(API_URL_BATTERIES, json=payload, headers=headers)
                         st.success("Import klaar!")
+
 
 
