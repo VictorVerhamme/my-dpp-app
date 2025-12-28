@@ -39,20 +39,19 @@ st.markdown(f"""
         border: 1px solid {COLOR_ACCENT};
         box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     }}
-    /* De groene balk is nu een flex-container om het logo te centreren */
     .green-header {{
         background-color: {COLOR_ACCENT};
-        height: 50px; /* Iets hoger gemaakt voor het logo */
+        height: 60px;
         border-radius: 10px 10px 0 0;
         margin: -40px -40px 30px -40px;
         display: flex;
         justify-content: center;
         align-items: center;
     }}
-    /* Styling voor het logo in de header */
     .header-logo {{
-        height: 60px;
+        height: 40px;
         width: auto;
+        /* Geen filter meer, zodat je originele kleuren zichtbaar zijn */
     }}
     .passport-card {{
         background-color: {COLOR_BG_CARD};
@@ -192,6 +191,7 @@ else:
                                 payload = {"name": str(row['name']), "manufacturer": user, "carbon_footprint": float(row.get('carbon_footprint', 0)), "recycled_content": int(row.get('recycled_content', 0))}
                                 client.post(API_URL_BATTERIES, json=payload, headers=headers)
                         st.success("Import klaar!")
+
 
 
 
