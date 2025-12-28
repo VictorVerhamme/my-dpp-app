@@ -273,7 +273,8 @@ else:
                     st.subheader("🔐 Systeembeheer & Bedrijfsoverzicht")
                     
                     # 1. DATA OPHALEN VOOR ADMIN
-                    all_companies = get_data(API_URL_COMPANIES)
+                    all_companies_raw = get_data(API_URL_COMPANIES)
+                    all_companies = [c for c in all_companies_raw if c.get('name') != "SuperAdmin"]
                     all_batteries = get_data(API_URL_BATTERIES)
                     
                     # 2. STATISTIEKEN IN KAARTEN
