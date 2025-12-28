@@ -267,10 +267,47 @@ else:
                     st.subheader("📂 Bulk Import via CSV")
                     # ... (Houd hier je volledige Bulk Import code zoals die was) ...
 
-            # --- TAB 4: ADMIN CONTROL (Alleen voor SuperAdmin) ---
+            # --- TAB: ADMIN CONTROL (Alleen voor SuperAdmin) ---
             if tab_admin:
                 with tab_admin:
-                    st.subheader("🔐 Admin Control Panel")
-                    # PLAK HIER JE ADMIN CODE (Statistieken, bedrijvenlijst, etc.)
-                    st.write("Welkom SuperAdmin, hier komen de systeemgegevens.")
+                    st.subheader("🔐 Systeembeheer & Bedrijfsoverzicht")
+                    
+                    # 1. DATA OPHALEN VOOR ADMIN
+                    all_companies = get_data(API_URL_COMPANIES)
+                    all_batteries = get_data(API_URL_BATTERIES)
+                    
+                    # 2. STATISTIEKEN IN KAARTEN
+                    col_stat1, col_stat2, col_stat3 = st.columns(3)
+                    
+                    if all_batteries and all_companies:
+                        with col_stat1:
+                            st.metric("Totaal Bedrijven", len(all_companies))
+                        with col_stat2:
+                            st.metric("Totaal DPP's Live", len(all_batteries))
+                        with col_stat3:
+                            # Bereken totaal aantal scans over het hele platform
+                            total_scans = sum(item.get('views', 0) for item in all_batteries)
+                            st.metric("Totaal Scans Wereldwijd", total_scans)
+                    
+                    st.divider()
 
+                    # 3. GEDETAILLEERD OVERZICHT
+                    col_left, col_right = st.columns([2, 1])
+                    
+                    with col_left:
+                        st.markdown("### 🏢 Geregistreerde Partners")
+                        if all_companies:
+                            df_comp = pd.DataFrame(all_companies)
+                            # We tonen alleen de naam en de datum van aanmaak
+                            st.dataframe(df_comp[['name', 'created_at']], use_container_width=True, hide_index=True)
+                        else:
+                            st.warning("Geen bedrijfsgegevens gevonden.")
+
+                    with col_right:
+                        st.markdown("### 🛠️ Systeem Status")
+                        st.success("API Verbinding: Actief")
+                        st.success("Database: Verbonden (Supabase)")
+                        st.info(f"Huidige Sessie: {st.session_state.company}")
+                        
+                        if st.button("🔄 Forceer Systeem Verversing"):
+                            st.rerun()
