@@ -1,5 +1,5 @@
 streamlit
 httpx
-
 qrcode[pil]
 pandas
+fpdf
