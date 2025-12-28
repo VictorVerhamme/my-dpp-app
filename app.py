@@ -23,35 +23,46 @@ st.set_page_config(page_title="EU Digital Battery Passport", page_icon="🔋", l
 query_params = st.query_params
 
 if "id" in query_params:
-    # --- PASPOORT PAGINA (Wat de consument ziet) ---
     battery_id = query_params["id"]
     
     with httpx.Client() as client:
-        # Haal de specifieke batterij op uit je Supabase tabel
         resp = client.get(f"{API_URL}?id=eq.{battery_id}", headers=headers)
         
         if resp.status_code == 200 and len(resp.json()) > 0:
             data = resp.json()[0]
             
-            st.success("✅ Officieel EU Product Paspoort")
-            st.title(f"🔋 {data['name']}")
-            st.write(f"**Fabrikant:** {data['manufacturer']}")
+            # --- STYLING ---
+            st.markdown(f"### 🔋 Product Paspoort: {data['name']}")
+            st.caption(f"Geregistreerd door {data['manufacturer']} • ID: {battery_id}")
             
             st.divider()
             
-            # Mooie weergave van de technische data
+            # Hoofd-stats in kaartjes
             col1, col2 = st.columns(2)
             with col1:
-                st.metric("CO2 Voetafdruk", f"{data['carbon_footprint']} kg CO2e")
+                st.write("🌍 **Ecologische Voetafdruk**")
+                st.metric(label="CO2 Impact", value=f"{data['carbon_footprint']} kg")
             with col2:
-                st.metric("Gerecycled Materiaal", f"{data['recycled_content']}%")
+                st.write("♻️ **Circulair Materiaal**")
+                st.metric(label="Gerecycled", value=f"{data['recycled_content']}%")
             
             st.divider()
-            st.info("ℹ️ Dit product voldoet aan de Europese Batterijverordening (EU) 2023/1542. Scan de fysieke QR-code op het product voor de meest recente status.")
+            
+            # Extra details in een uitklapmenu
+            with st.expander("📄 Compliance & EU Richtlijnen"):
+                st.write("""
+                Dit product voldoet aan de Europese Batterijverordening (EU) 2023/1542.
+                - **Categorie:** Industriële Batterij
+                - **Status:** Actief op de markt
+                - **Documentatie:** [Download CE-certificaat](#)
+                """)
+            
+            # Contact knop
+            st.button(f"📧 Contacteer {data['manufacturer']} voor service")
+            
+            st.success("✅ Dit is een geverifieerd digitaal paspoort.")
         else:
-            st.error("❌ Paspoort niet gevonden. Controleer de QR-code.")
-            if st.button("Terug naar home"):
-                st.query_params.clear()
+            st.error("Oeps! Dit paspoort lijkt niet (meer) te bestaan.")
 else:
     # --- ADMIN PAGINA (Jouw dashboard om data in te voeren) ---
     st.title("🏗️ DPP Generator")
@@ -119,3 +130,4 @@ else:
             file_name=f"QR_{new_battery_name}.png",
             mime="image/png"
         )
+
