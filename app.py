@@ -272,19 +272,28 @@ else:
                     st.write("Verbind fabrikanten, overheden en consumenten in één veilig ecosysteem.")
                     
         elif st.session_state.auth_mode == "login":
-            # --- STAP B: HET INLOGSCHERM (Gecentreerd & Compact) ---
-            
-            # 1. We maken 3 kolommen: de buitenste zijn leeg, de middelste is voor de kaart.
-            # De verhouding [1, 2, 1] zorgt ervoor dat de kaart de helft van het scherm inneemt.
-            _, center_col, _ = st.columns([1, 2, 1])
+            # --- 1. CENTREREN VAN DE KAART OP HET SCHERM ---
+            # We gebruiken flexibele kolommen. [1, 1.5, 1] werkt vaak beter voor een smalle kaart.
+            _, center_col, _ = st.columns([1, 1.5, 1])
 
             with center_col:
-                # 2. Gebruik een container met border voor een echte "Card" look
                 with st.container(border=True):
-                    # Logo centreren
-                    st.image(LOGO_URL, width=400)
                     
-                    st.markdown("<h3 style='text-align: center; margin-top: -20px;)
+                    # --- 2. CENTREREN VAN HET LOGO BINNEN DE KAART ---
+                    # We maken 3 kolommen binnen de kaart. De middelste krijgt het logo.
+                    # Door [1, 1, 1] te gebruiken, dwingen we het logo exact in het midden.
+                    sub_l, sub_m, sub_r = st.columns([1, 1, 1])
+                    with sub_m:
+                        st.image(LOGO_URL, width=450) # Formaat van je logo
+
+                    # --- 3. CENTREREN VAN DE TEKST ---
+                    st.markdown("""
+                        <div style='text-align: center;'>
+                            <h3 style='margin-top: -10px;'>Partner Login</h3>
+                            <p style='color: gray; font-size: 0.9rem;'>Beheer uw digitale paspoorten</p>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
                     st.write("---")
                     
                     # Input velden
@@ -644,6 +653,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
