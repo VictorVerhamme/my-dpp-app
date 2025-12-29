@@ -6,83 +6,115 @@
     <title>EU Digital Product Passport</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #FDFBF7; font-family: sans-serif; }
-        .accent-border { border-top: 10px solid #8FAF9A; }
+        body { background-color: #FDFBF7; font-family: 'Inter', sans-serif; color: #333; }
+        .accent-card { border-top: 8px solid #8FAF9A; }
+        .icon-circle { background-color: #f0f4f1; border-radius: 50%; width: 40px; height: 40px; display: flex; items-center; justify-center; }
     </style>
 </head>
-<body class="p-4 flex justify-center items-start min-h-screen">
-    <div id="app" class="bg-white rounded-3xl shadow-xl p-6 w-full max-w-md accent-border hidden">
-        <div class="text-center">
-            <img id="logo" src="https://i.postimg.cc/43LQn3qG/Chat-GPT-Image-28-dec-2025-14-50-31-removebg-preview.png" class="w-32 mx-auto mb-4">
-            <h1 id="product-name" class="text-2xl font-bold text-gray-800">Laden...</h1>
-            <p id="meta-info" class="text-sm text-gray-500 mb-6"></p>
+<body class="p-3 sm:p-6 bg-[#FDFBF7]">
+    <div id="app" class="hidden max-w-lg mx-auto space-y-4">
+        
+        <div class="bg-white rounded-3xl p-6 shadow-sm text-center accent-card">
+            <img src="https://i.postimg.cc/43LQn3qG/Chat-GPT-Image-28-dec-2025-14-50-31-removebg-preview.png" class="w-32 mx-auto mb-4">
+            <h1 id="product-name" class="text-2xl font-bold">Laden...</h1>
+            <p id="meta-info" class="text-sm text-gray-500 uppercase tracking-widest"></p>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
-                <p class="text-[10px] uppercase text-gray-400">🌍 CO2 Impact</p>
-                <p id="co2" class="text-lg font-bold text-[#8FAF9A]">-</p>
-            </div>
-            <div class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-center">
-                <p class="text-[10px] uppercase text-gray-400">♻️ Recycled Li</p>
-                <p id="recycled" class="text-lg font-bold text-[#8FAF9A]">-</p>
-            </div>
-        </div>
-
-        <div class="mb-6">
-            <div class="flex justify-between text-sm font-bold mb-1">
-                <span>🔋 Gezondheid (SoH)</span>
-                <span id="soh-text">-%</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-3">
-                <div id="soh-bar" class="bg-[#8FAF9A] h-3 rounded-full" style="width: 0%"></div>
+        <div class="bg-white rounded-3xl p-6 shadow-sm space-y-4">
+            <h2 class="text-lg font-bold flex items-center gap-2">🌿 Milieu-impact</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-[#f9fbf9] p-4 rounded-2xl border border-gray-100">
+                    <p class="text-[10px] text-gray-400 uppercase font-bold">CO₂ Voetafdruk</p>
+                    <p id="co2" class="text-xl font-black text-[#8FAF9A]">-</p>
+                    <p class="text-[10px] text-gray-500 mt-1 italic">Wat dit betekent: De totale uitstoot tijdens de productie van deze batterij.</p>
+                </div>
+                <div class="bg-[#f9fbf9] p-4 rounded-2xl border border-gray-100">
+                    <p class="text-[10px] text-gray-400 uppercase font-bold">Recycling</p>
+                    <p id="recycled" class="text-xl font-black text-[#8FAF9A]">-</p>
+                    <p class="text-[10px] text-gray-500 mt-1 italic">Wat dit betekent: Het aandeel hergebruikte materialen (Lithium/Kobalt).</p>
+                </div>
             </div>
         </div>
 
-        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 text-sm rounded-r-lg">
-            <p class="font-bold mb-1">♻️ Einde Levensduur</p>
-            <p id="eol">Laden...</p>
+        <div class="bg-white rounded-3xl p-6 shadow-sm space-y-4">
+            <h2 class="text-lg font-bold flex items-center gap-2">🔋 Batterij Conditie</h2>
+            <div>
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-bold">State of Health (SoH)</span>
+                    <span id="soh-text" class="text-sm font-bold">-%</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-4">
+                    <div id="soh-bar" class="bg-[#8FAF9A] h-4 rounded-full" style="width: 0%"></div>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-2 italic">Wat dit betekent: Hoeveel capaciteit de batterij nog heeft vergeleken met toen hij nieuw was. 100% is perfect.</p>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <p>⚡ Capaciteit: <span id="capacity" class="font-bold">-</span></p>
+                <p>🔄 Cycli: <span id="cycles" class="font-bold">-</span></p>
+            </div>
         </div>
 
-        <p class="text-center text-[10px] text-gray-400 mt-8">
-            ✅ Officieel EU Digital Product Passport<br>Verordening 2023/1542 conform
-        </p>
+        <div class="bg-white rounded-3xl p-6 shadow-sm">
+            <h2 class="text-lg font-bold mb-3">🌍 Herkomst Grondstoffen</h2>
+            <div class="p-4 bg-gray-50 rounded-2xl text-sm">
+                <p id="origin" class="text-gray-700 leading-relaxed"></p>
+                <p class="text-[10px] text-gray-500 mt-3 font-bold uppercase">✅ Due Diligence Geverifieerd</p>
+                <p class="text-[10px] text-gray-400 italic leading-tight">Wat dit betekent: Wij controleren of grondstoffen zoals kobalt en nikkel op een eerlijke en veilige manier zijn gewonnen.</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-3xl p-6 shadow-sm border-2 border-dashed border-gray-200">
+            <h2 class="text-lg font-bold mb-2">♻️ Wat te doen na gebruik?</h2>
+            <p id="eol" class="text-sm text-gray-600 mb-4"></p>
+            <div class="bg-green-50 p-3 rounded-xl text-[11px] text-green-800">
+                <strong>Wist u dat?</strong> Door deze batterij op het juiste punt in te leveren, kan tot 95% van de materialen worden hergebruikt voor nieuwe batterijen.
+            </div>
+        </div>
+
+        <div class="text-center pb-10">
+            <p class="text-[10px] text-gray-400">
+                Geregistreerd op: <span id="reg-date">-</span><br>
+                EU Digital Product Passport ID: <span id="uuid">-</span><br>
+                © 2025 DPP Compliance Engine
+            </p>
+        </div>
     </div>
 
-    <div id="error" class="hidden text-red-500 text-center mt-10">Paspoort niet gevonden.</div>
+    <div id="error" class="hidden text-center mt-20 p-6 bg-white rounded-2xl shadow-md mx-auto max-w-xs">
+        <p class="text-red-500 font-bold text-lg">⚠️ Fout</p>
+        <p class="text-gray-500 text-sm mt-2">Paspoort niet gevonden in onze database. Scan een andere code of contacteer de verkoper.</p>
+    </div>
 
     <script>
         async function fetchPassport() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const passportId = urlParams.get('id');
-            
-            if (!passportId) { document.getElementById('error').classList.remove('hidden'); return; }
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (!id) { document.getElementById('error').classList.remove('hidden'); return; }
 
-            const SUPABASE_URL = "https://nihebcwfjtezkufbxcnq.supabase.co"; //
-            const SUPABASE_KEY = "sb_publishable_GYqO17G-B2DkS9j3TW1nHQ_BiyJOHJy"; //
+            const URL = "https://nihebcwfjtezkufbxcnq.supabase.co/rest/v1/Batteries?id=eq." + id;
+            const KEY = "sb_publishable_GYqO17G-B2DkS9j3TW1nHQ_BiyJOHJy";
 
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/Batteries?id=eq.${passportId}`, {
-                    headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}` }
-                });
-                const data = await response.json();
+                const r = await fetch(URL, { headers: { "apikey": KEY, "Authorization": "Bearer " + KEY } });
+                const d = (await r.json())[0];
 
-                if (data && data.length > 0) {
-                    const d = data[0];
-                    document.getElementById('product-name').innerText = d.name;
-                    document.getElementById('meta-info').innerText = `Batch: ${d.batch_number} | Model: ${d.model_name}`;
+                if (d) {
+                    document.getElementById('product-name').innerText = d.name || 'Onbekende Batterij';
+                    document.getElementById('meta-info').innerText = `Batch: ${d.batch_number || 'N/A'} | Type: ${d.battery_type || 'EV'}`;
                     document.getElementById('co2').innerText = `${d.carbon_footprint || 0} kg`;
                     document.getElementById('recycled').innerText = `${d.rec_lithium_pct || 0}%`;
                     document.getElementById('soh-text').innerText = `${d.soh_pct || 100}%`;
                     document.getElementById('soh-bar').style.width = `${d.soh_pct || 100}%`;
-                    document.getElementById('eol').innerText = d.eol_instructions || "Lever in bij een officieel inzamelpunt.";
+                    document.getElementById('capacity').innerText = `${d.capacity_kwh || 0} kWh`;
+                    document.getElementById('cycles').innerText = d.cycles_to_80 || 0;
+                    document.getElementById('origin').innerText = d.mineral_origin || "Informatie over herkomst is momenteel niet beschikbaar.";
+                    document.getElementById('eol').innerText = d.eol_instructions || "Lever dit product in bij een erkend recyclagepunt volgens de lokale wetgeving.";
+                    document.getElementById('uuid').innerText = d.battery_uid || d.id;
+                    document.getElementById('reg-date').innerText = d.registration_date || 'N/A';
+                    
                     document.getElementById('app').classList.remove('hidden');
-                } else {
-                    document.getElementById('error').classList.remove('hidden');
-                }
-            } catch (err) {
-                document.getElementById('error').classList.remove('hidden');
-            }
+                } else { document.getElementById('error').classList.remove('hidden'); }
+            } catch (e) { document.getElementById('error').classList.remove('hidden'); }
         }
         fetchPassport();
     </script>
