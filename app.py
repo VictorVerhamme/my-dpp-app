@@ -348,51 +348,96 @@ else:
 
             # --- TAB 1: REGISTRATIE (Alleen voor gebruikers) ---
             if tab_reg:
+                # --- TAB 1: REGISTRATIE (Uitgebreid voor 8 Pijlers) ---
+            if tab_reg:
                 with tab_reg:
-                    st.image(LOGO_URL, width=300)
-                    with st.form("master_compliance_wizard"):
-                        col1, col2, col3, col4 = st.columns(4)
-                        with col1:
-                            st.markdown("##### 1. Identificatie")
+                    st.markdown("### ✨ Nieuwe Compliance Registratie")
+                    st.info("Vul alle velden in om een 100% wettelijk conform EU-paspoort te genereren.")
+                    
+                    with st.form("master_compliance_wizard", clear_on_submit=True):
+                        # PIJLER 1 & 2: Identificatie & Fabrikant
+                        st.markdown("#### 🆔 1. Productidentificatie & Herkomst")
+                        c1, c2, c3 = st.columns(3)
+                        with c1:
                             f_name = st.text_input("Productnaam *")
                             f_model = st.text_input("Model ID *")
+                            f_type = st.selectbox("Batterij Type *", ["EV", "LMT (E-bike/Step)", "Industrieel", "Stationair"])
+                        with c2:
                             f_batch = st.text_input("Batchnummer *")
                             f_date = st.date_input("Productiedatum")
-                            f_weight = st.number_input("Gewicht (kg) *", min_value=0.1)
-                        with col2:
-                            st.markdown("##### 2. Markttoegang")
-                            f_epr = st.text_input("EPR Nummer")
-                            f_addr = st.text_input("Adres Fabriek")
-                            f_doc = st.text_input("CE DoC Referentie")
-                            f_mod = st.selectbox("CE Module", ["Module A", "Module B", "Module G"])
-                        with col3:
-                            st.markdown("##### 3. Milieu")
-                            f_co2 = st.number_input("Carbon footprint (kg CO2)", min_value=0.0)
-                            f_meth = st.selectbox("CO2 Methode", ["EU PEF", "ISO 14067"])
-                            f_li = st.number_input("% Rec. Lithium", 0.0, 100.0)
-                        with col4:
-                            st.markdown("##### 4. Prestatie")
-                            f_cap = st.number_input("Capaciteit (kWh)", min_value=0.0)
-                            f_soh = st.slider("State of Health (%)", 0, 100, 100)
-                            f_cycles = st.number_input("Cycli tot 80%", min_value=0)
+                            f_weight = st.number_input("Gewicht (kg) *", min_value=0.01)
+                        with c3:
+                            f_epr = st.text_input("EPR Registratienummer *")
+                            f_addr = st.text_area("Adres Productiefaciliteit *", height=68)
 
                         st.divider()
-                        f_eol = st.text_area("End-of-life instructies (Verplicht)")
 
-                        if st.form_submit_button("Valideren & Registreren", use_container_width=True):
-                            payload = {
-                                "name": f_name, "model_name": f_model, "batch_number": f_batch,
-                                "battery_uid": str(uuid.uuid4()), "production_date": str(f_date),
-                                "weight_kg": f_weight, "manufacturer": st.session_state.company,
-                                "carbon_footprint": f_co2, "carbon_method": f_meth,
-                                "rec_lithium_pct": f_li, "cycles_to_80": f_cycles, "soh_pct": f_soh,
-                                "eol_instructions": f_eol, "modified_by": st.session_state.company,
-                                "registration_date": datetime.now().strftime("%Y-%m-%d %H:%M"), "views": 0
-                            }
-                            with httpx.Client() as client:
-                                r = client.post(API_URL_BATTERIES, json=payload, headers=headers)
-                                if r.status_code == 201:
-                                    st.success("✅ Succesvol geregistreerd!"); st.balloons(); st.rerun()
+                        # PIJLER 3 & 6: Milieu & Supply Chain
+                        st.markdown("#### 🌿 2. Milieu-impact & Due Diligence")
+                        c4, c5, c6 = st.columns(3)
+                        with c4:
+                            f_co2 = st.number_input("Carbon footprint (kg CO2e)", min_value=0.0)
+                            f_meth = st.selectbox("CO2 Berekeningsmethode", ["EU PEF Compliant", "ISO 14067"])
+                        with c5:
+                            st.write("**Gerecycleerde Inhoud (%)**")
+                            f_li = st.number_input("Lithium", 0.0, 100.0, key="reg_li")
+                            f_co = st.number_input("Kobalt", 0.0, 100.0, key="reg_co")
+                        with c6:
+                            st.write("**&nbsp;**") # Uitlijning
+                            f_ni = st.number_input("Nikkel", 0.0, 100.0, key="reg_ni")
+                            f_pb = st.number_input("Lood", 0.0, 100.0, key="reg_pb")
+                        
+                        f_origin = st.text_area("Herkomst Kritieke Grondstoffen (Due Diligence informatie) *", 
+                                              placeholder="Bijv. Lithium: Chili, Kobalt: DR Congo. Gecertificeerd via IRMA/RMI.")
+
+                        st.divider()
+
+                        # PIJLER 4 & 5: Prestatie & Veiligheid
+                        st.markdown("#### 🔋 3. Prestaties & Veiligheid")
+                        c7, c8, c9 = st.columns(3)
+                        with c7:
+                            f_cap = st.number_input("Nominale Capaciteit (kWh) *", min_value=0.0)
+                            f_retention = st.number_input("Verwachte Capaciteitsretentie (%)", 0, 100, 80)
+                        with c8:
+                            f_soh = st.slider("Initiële State of Health (%)", 0, 100, 100)
+                            f_cycles = st.number_input("Verwachte Laadcycli (tot 80%)", min_value=0)
+                        with c9:
+                            f_doc = st.text_input("CE DoC Referentie *")
+                            f_mod = st.selectbox("Conformiteitsmodule", ["Module A", "Module B + C", "Module G"])
+
+                        st.divider()
+
+                        # PIJLER 7 & 8: Chemie & Einde Levensduur
+                        st.markdown("#### ♻️ 4. Circulariteit & Chemie")
+                        f_chem = st.text_input("Chemische Samenstelling (bijv. Li-ion NMC 811)", "Li-ion NMC")
+                        f_eol = st.text_area("Gedetailleerde End-of-life instructies (Verplicht) *", 
+                                           placeholder="Instructies voor demontage, inzameling en recycling conform richtlijn 2006/66/EG.")
+
+                        if st.form_submit_button("Valideren & Registreren in Blockchain", use_container_width=True):
+                            if not f_name or not f_model or not f_batch or not f_eol or not f_origin:
+                                st.error("❌ Verplichte velden ontbreken. Vul alle velden met een * in.")
+                            else:
+                                payload = {
+                                    "name": f_name, "model_name": f_model, "batch_number": f_batch,
+                                    "battery_uid": str(uuid.uuid4()), "production_date": str(f_date),
+                                    "weight_kg": f_weight, "manufacturer": st.session_state.company,
+                                    "battery_type": f_type, "factory_address": f_addr,
+                                    "carbon_footprint": f_co2, "carbon_method": f_meth,
+                                    "rec_lithium_pct": f_li, "rec_cobalt_pct": f_co, 
+                                    "rec_nickel_pct": f_ni, "rec_lead_pct": f_pb,
+                                    "capacity_kwh": f_cap, "capacity_retention_pct": f_retention,
+                                    "cycles_to_80": f_cycles, "soh_pct": f_soh,
+                                    "mineral_origin": f_origin, "ce_doc_reference": f_doc, "ce_module": f_mod,
+                                    "epr_number": f_epr, "chemistry": f_chem,
+                                    "eol_instructions": f_eol, "modified_by": st.session_state.company,
+                                    "registration_date": datetime.now().strftime("%Y-%m-%d %H:%M"), "views": 0
+                                }
+                                with httpx.Client() as client:
+                                    r = client.post(API_URL_BATTERIES, json=payload, headers=headers)
+                                    if r.status_code == 201:
+                                        st.success("✅ Succesvol geregistreerd!"); st.rerun()
+                                    else:
+                                        st.error(f"Fout bij opslaan: {r.text}")
 
             # --- TAB 2: VLOOTOVERZICHT (Voor IEDEREEN) ---
             with tab_fleet:
@@ -565,6 +610,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
