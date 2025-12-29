@@ -69,8 +69,7 @@ def generate_certificate(data):
     pdf = FPDF()
     pdf.add_page()
     
-    # 1. LOGO TOEVOEGEN (Rechtsboven)
-    # We downloaden het logo kortstondig om het in de PDF te kunnen plaatsen
+    # 1. LOGO TOEVOEGEN
     try:
         with httpx.Client() as client:
             logo_resp = client.get(LOGO_URL)
@@ -78,75 +77,90 @@ def generate_certificate(data):
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_logo:
                     tmp_logo.write(logo_resp.content)
                     tmp_logo_path = tmp_logo.name
-                # Plaats logo rechtsboven: x=150, y=10, breedte=40
                 pdf.image(tmp_logo_path, x=150, y=10, w=40)
                 os.remove(tmp_logo_path)
     except:
-        pass # Ga door zonder logo als de download faalt om crashes te voorkomen
+        pass
 
-    # 2. HEADER - NU VOLLEDIG ZWART
+    # 2. HEADER
     pdf.set_font("Arial", 'B', 18)
-    pdf.set_text_color(0, 0, 0) # Zwart (was saliegroen)
-    pdf.cell(200, 15, txt="EU Digital Product Passport", ln=True, align='L')
-    
-    # Audit Datum - Nu in Zwart
-    pdf.set_font("Arial", 'I', 10)
-    pdf.set_text_color(0, 0, 0) # Zwart (was grijs)
-    pdf.cell(200, 10, txt=f"Gegenereerd op: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align='L')
-    pdf.ln(10)
-    
-    # 3. TABEL SECTIE
-    pdf.set_fill_color(245, 247, 246)
-    pdf.set_font("Arial", 'B', 11)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(190, 10, txt="Wettelijke Productidentificatie & Audit Trail", ln=True, align='L', fill=True)
+    pdf.cell(200, 15, txt="EU Digital Product Passport - Compliance Audit", ln=True, align='L')
+    
+    pdf.set_font("Arial", 'I', 10)
+    pdf.cell(200, 10, txt=f"Gegenereerd op: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align='L')
+    pdf.ln(5)
+    
+    # 3. TABEL SECTIE: BASIS IDENTIFICATIE
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font("Arial", 'B', 11)
+    pdf.cell(190, 10, txt="1. Productidentificatie & Fabrikant", ln=True, fill=True)
     
     pdf.set_font("Arial", '', 9)
-    # Mapping van alle velden
     fields = [
-        ("Batterij UUID", data.get('battery_uid')),
+        ("Batterij UID", data.get('battery_uid')),
         ("Naam / Model", data.get('name')),
         ("Batchnummer", data.get('batch_number')),
-        ("Productiedatum", data.get('production_date')),
-        ("Gewicht (kg)", data.get('weight_kg')),
-        ("Batterij Type", data.get('battery_type')),
-        ("CO2 Voetafdruk", f"{data.get('carbon_footprint')} kg"),
-        ("CO2 Methode", data.get('carbon_method')),
-        ("EPR Nummer", data.get('epr_number')),
-        ("CE DoC Referentie", data.get('ce_doc_reference')),
-        ("CE Module", data.get('ce_module')),
-        ("Recycled Li (%)", data.get('rec_lithium_pct')),
-        ("Recycled Co (%)", data.get('rec_cobalt_pct')),
-        ("Recycled Ni (%)", data.get('rec_nickel_pct')),
-        ("Recycled Pb (%)", data.get('rec_lead_pct')),
-        ("Laadcycli tot 80%", data.get('cycles_to_80')),
-        ("Capaciteitsretentie (%)", data.get('capacity_retention_pct')),
-        ("State of Health (SoH)", f"{data.get('soh_pct')}%"),
-        ("Geregistreerd door", data.get('modified_by')),
-        ("Registratie Datum", data.get('registration_date'))
+        ("Productietype", data.get('battery_type')),
+        ("Chemische Samenstelling", data.get('chemistry')),
+        ("Fabrikant", data.get('manufacturer')),
+        ("Fabriekslocatie", data.get('factory_address')),
+        ("EPR Registratie", data.get('epr_number')),
     ]
     
-    # Velden tekenen in zwart
     for label, val in fields:
-        pdf.set_text_color(0, 0, 0) # Zekerheid dat tekst zwart is
         pdf.cell(70, 7, txt=f"{label}:", border=1)
         pdf.cell(120, 7, txt=str(val or 'N/A'), border=1, ln=True)
 
     pdf.ln(5)
+
+    # 4. TABEL SECTIE: MILIEU & RECYCLING
+    pdf.set_font("Arial", 'B', 11)
+    pdf.cell(190, 10, txt="2. Milieu-impact & Gecertificeerde Recycling", ln=True, fill=True)
+    
+    pdf.set_font("Arial", '', 9)
+    eco_fields = [
+        ("Carbon Footprint", f"{data.get('carbon_footprint')} kg CO2e"),
+        ("CO2 Methode", data.get('carbon_method')),
+        ("Recycled Lithium (%)", f"{data.get('rec_lithium_pct')}%"),
+        ("Recycled Kobalt (%)", f"{data.get('rec_cobalt_pct')}%"),
+        ("Recycled Nikkel (%)", f"{data.get('rec_nickel_pct')}%"),
+        ("Recycled Lood (%)", f"{data.get('rec_lead_pct')}%"),
+    ]
+    
+    for label, val in eco_fields:
+        pdf.cell(70, 7, txt=f"{label}:", border=1)
+        pdf.cell(120, 7, txt=str(val or '0%'), border=1, ln=True)
+
+    pdf.ln(5)
+
+    # 5. UITGEBREIDE TEKSTVELDEN: DUE DILIGENCE & EOL
+    # Due Diligence (Herkomst mineralen)
     pdf.set_font("Arial", 'B', 10)
-    pdf.cell(190, 8, txt="End-of-Life Instructies voor de consument", ln=True, fill=True)
+    pdf.cell(190, 8, txt="3. Grondstoffen & Supply Chain Due Diligence", ln=True, fill=True)
+    pdf.set_font("Arial", '', 9)
+    pdf.multi_cell(190, 6, txt=str(data.get('mineral_origin') or "Geen herkomstinformatie opgegeven."), border=1)
+    
+    pdf.ln(3)
+
+    # End-of-Life
+    pdf.set_font("Arial", 'B', 10)
+    pdf.cell(190, 8, txt="4. End-of-Life Instructies (Circulariteit)", ln=True, fill=True)
     pdf.set_font("Arial", '', 9)
     pdf.multi_cell(190, 6, txt=str(data.get('eol_instructions') or "Niet gespecificeerd."), border=1)
 
-    # 4. QR CODE ONDERAAN
+    # 6. QR CODE & VERIFICATIE
+    pdf.ln(5)
     qr_img_bytes = make_qr(data['id'])
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_qr:
         tmp_qr.write(qr_img_bytes)
         tmp_qr_path = tmp_qr.name
     try:
-        pdf.ln(10)
-        # QR code centreren
-        pdf.image(tmp_qr_path, x=85, y=pdf.get_y(), w=40)
+        # Tekst naast de QR code
+        pdf.set_font("Arial", 'B', 8)
+        pdf.set_xy(10, pdf.get_y())
+        pdf.cell(140, 5, txt="SCAN VOOR DIGITALE VERIFICATIE", ln=False)
+        pdf.image(tmp_qr_path, x=150, y=pdf.get_y() - 5, w=30)
     finally:
         if os.path.exists(tmp_qr_path): os.remove(tmp_qr_path)
         
@@ -496,30 +510,38 @@ else:
             # --- TAB 3: BULK IMPORT ---
             if tab_bulk:
                 with tab_bulk:
-                    st.subheader("📂 Bulk Import via CSV")
+                    st.subheader("📂 Geavanceerde Bulk Import (8 Pijlers)")
                     
-                    # Sjabloon download
-                    template_df = pd.DataFrame({"Productnaam": ["Accu X"], "Model ID": ["MOD-1"], "Batchnummer": ["B1"], "Gewicht kg": [10.5], "CO2 kg": [5.0], "EOL Instructies": ["Recycle bij punt X"]})
-                    csv_template = template_df.to_csv(index=False).encode('utf-8')
-                    st.download_button("📥 Download Sjabloon", csv_template, "dpp_template.csv", "text/csv")
+                    # Nieuw sjabloon met alle kolommen
+                    template_data = {
+                        "Productnaam": ["EV Pack A1"], "Model ID": ["MOD-100"], "Batch": ["B-2025"],
+                        "Gewicht_kg": [150.0], "Type": ["EV"], "Adres_Fabriek": ["Industrieweg 1, Antwerpen"],
+                        "CO2_kg": [45.2], "Rec_Li": [15.0], "Rec_Co": [10.0], "Capaciteit_kWh": [75.0],
+                        "Mineral_Origin": ["Lithium: Chili, Kobalt: Congo"], "EOL_Instructies": ["Recycle via punt X"]
+                    }
+                    df_temp = pd.DataFrame(template_data)
+                    st.download_button("📥 Download Uitgebreid Sjabloon", df_temp.to_csv(index=False).encode('utf-8'), "dpp_compliance_template.csv")
 
                     uploaded_file = st.file_uploader("Upload CSV", type="csv")
-                    if uploaded_file and st.button("🚀 Start Bulk Import"):
+                    if uploaded_file and st.button("🚀 Start Bulk Validatie & Import"):
                         df_upload = pd.read_csv(uploaded_file)
                         success_count = 0
                         for _, row in df_upload.iterrows():
                             payload = {
                                 "name": str(row.get('Productnaam')), "model_name": str(row.get('Model ID')),
-                                "batch_number": str(row.get('Batchnummer')), "battery_uid": str(uuid.uuid4()),
-                                "weight_kg": float(row.get('Gewicht kg', 0)), "carbon_footprint": float(row.get('CO2 kg', 0)),
-                                "eol_instructions": str(row.get('EOL Instructies')), "manufacturer": st.session_state.company,
+                                "batch_number": str(row.get('Batch')), "battery_uid": str(uuid.uuid4()),
+                                "weight_kg": float(row.get('Gewicht_kg', 0)), "battery_type": str(row.get('Type', 'EV')),
+                                "factory_address": str(row.get('Adres_Fabriek')), "carbon_footprint": float(row.get('CO2_kg', 0)),
+                                "rec_lithium_pct": float(row.get('Rec_Li', 0)), "rec_cobalt_pct": float(row.get('Rec_Co', 0)),
+                                "capacity_kwh": float(row.get('Capaciteit_kWh', 0)), "mineral_origin": str(row.get('Mineral_Origin')),
+                                "eol_instructions": str(row.get('EOL_Instructies')), "manufacturer": st.session_state.company,
                                 "registration_date": datetime.now().strftime("%Y-%m-%d %H:%M"), "views": 0
                             }
                             with httpx.Client() as client:
                                 if client.post(API_URL_BATTERIES, json=payload, headers=headers).status_code == 201:
                                     success_count += 1
-                        st.success(f"✅ {success_count} producten toegevoegd!"); st.rerun()
-
+                        st.success(f"✅ {success_count} producten succesvol gedigitaliseerd!"); st.rerun()
+                        
             # --- TAB: ADMIN CONTROL (Alleen voor SuperAdmin) ---
             if tab_admin:
                 with tab_admin:
@@ -608,6 +630,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
