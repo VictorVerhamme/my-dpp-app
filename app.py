@@ -33,7 +33,10 @@ def is_authority():
     return st.query_params.get("role") == "inspectie"
 
 def make_qr(id):
-    url = f"https://digitalpassport.streamlit.app/?id={id}"
+    # Verander de link naar je nieuwe GitHub Pages locatie
+    # Vergeet de '.html' en de '?id=' aan het einde niet!
+    url = f"https://victorverhamme.github.io/my-dpp-app/passport.html?id={id}"
+    
     qr = qrcode.make(url)
     buf = BytesIO()
     qr.save(buf, format="PNG")
@@ -164,46 +167,12 @@ st.markdown(f"""
 # --- 4. APP LOGICA ---
 q_params = st.query_params
 
-# Initialiseer pagina-status als deze nog niet bestaat
-if 'auth_mode' not in st.session_state:
-    st.session_state.auth_mode = "landing"
-
 if "id" in q_params:
-    # --- PASPOORT VIEW (Versie voor maximale snelheid en gsm-compatibiliteit) ---
-    res = get_data(f"{API_URL_BATTERIES}?id=eq.{q_params['id']}")
-    if res:
-        d = res[0]
-        
-        # Geen ingewikkelde HTML meer, maar strakke Streamlit layout
-        st.image(LOGO_URL, width=150)
-        st.title(f"{d.get('name')}")
-        st.caption(f"Batch: {d.get('batch_number')} | Model: {d.get('model_name')}")
-        
-        st.divider()
-
-        # Gebruik kolommen die op mobiel netjes onder elkaar springen
-        col1, col2 = st.columns(2)
-        col1.metric("🌍 CO2 Impact", f"{d.get('carbon_footprint', 0)} kg")
-        col2.metric("♻️ Recycled Li", f"{d.get('rec_lithium_pct', 0)}%")
-        
-        col3, col4 = st.columns(2)
-        col3.metric("⚡ Capaciteit", f"{d.get('capacity_kwh', 0)} kWh")
-        col4.metric("🔄 Cycli", f"{d.get('cycles_to_80', 0)}")
-
-        st.divider()
-        
-        # Visuele batterijstatus
-        soh = d.get('soh_pct', 100)
-        st.write(f"**🔋 Batterij Gezondheid (SoH): {soh}%**")
-        st.progress(soh / 100)
-
-        with st.expander("♻️ Einde levensduur instructies"):
-            st.write(d.get('eol_instructions', 'Lever in bij een officieel inzamelpunt.'))
-
-        st.caption("✅ Officieel EU Digital Product Passport")
-    else:
-        st.error("Paspoort niet gevonden.")
-        
+    st.info("Scan voltooid. U wordt doorverwezen naar het snelle mobiele portaal...")
+    # Optioneel: Automatische redirect (werkt in de meeste browsers)
+    st.markdown(f'<meta http-equiv="refresh" content="0;URL=\'https://victorverhamme.github.io/my-dpp-app/passport.html?id={q_params["id"]}\'" />', unsafe_allow_html=True)
+    st.stop()
+    
 else:
     # --- DASHBOARD & LANDING PAGE LOGICA ---
     if 'company' not in st.session_state: st.session_state.company = None
@@ -535,6 +504,7 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
 
 
