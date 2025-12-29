@@ -37,8 +37,13 @@ def hash_password(password):
     return hashed.decode('utf-8')
 
 def check_password(password, hashed):
-    # Vergelijk het ingevoerde wachtwoord met de hash uit de database
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+    try:
+        # Probeer eerst op de veilige manier (bcrypt)
+        return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+    except ValueError:
+        # Als dit faalt (bijv. 'Invalid salt'), is het een oud plat-tekst wachtwoord
+        # We vergelijken het dan gewoon direct
+        return password == hashed
     
 def is_authority():
     return st.query_params.get("role") == "inspectie"
@@ -525,6 +530,7 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
 
 
