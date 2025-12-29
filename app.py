@@ -634,6 +634,7 @@ else:
                         st.success(f"✅ {success_count} producten succesvol gedigitaliseerd!"); st.rerun()
                         
             # --- TAB: ADMIN CONTROL (Alleen voor SuperAdmin) ---
+            # --- TAB: ADMIN CONTROL (Volledig Gecorrigeerd) ---
             if tab_admin:
                 with tab_admin:
                     st.subheader("🔐 Systeembeheer & Partneroverzicht")
@@ -646,8 +647,6 @@ else:
                     # 2. STATISTIEKEN (Bovenaan)
                     c_st1, c_st2 = st.columns(2)
                     c_st1.metric("Geregistreerde Partners", len(all_companies))
-                    
-                    # Hier hebben we de tekst aangepast zoals gevraagd
                     c_st2.metric("Totaal geregistreerde batterijen", len(all_batteries))
                     
                     st.divider()
@@ -655,74 +654,54 @@ else:
                     # 3. LAYOUT IN TWEE KOLOMMEN
                     col_left, col_right = st.columns([2, 1])
 
-                   with col_left:
-                        st.markdown("### 🏢 Partner Overzicht & Compliance Status")
+                    with col_left:
+                        st.markdown("### 🏢 Partner Overzicht & Compliance")
                         if all_companies and all_batteries:
-                            # 1. Maak basis DataFrames
+                            # Maak DataFrames
                             df_comp = pd.DataFrame(all_companies)
                             df_batt = pd.DataFrame(all_batteries)
                             
-                            # 2. Definieer Compliance Check Logica
-                            def check_compliance(item):
-                                # We kijken naar dezelfde criteria als in de monitor
+                            # COMPLIANCE LOGICA: Wat is een 'foute' batterij?
+                            def is_compliant(item):
                                 has_origin = item.get('mineral_origin') and len(str(item.get('mineral_origin'))) >= 5
                                 has_factory = item.get('factory_address')
                                 has_eol = item.get('eol_instructions') and len(str(item.get('eol_instructions'))) >= 20
-                                has_ce = item.get('ce_doc_reference')
-                                
-                                # Retourneer True als alles klopt, anders False
-                                return all([has_origin, has_factory, has_eol, has_ce])
+                                return all([has_origin, has_factory, has_eol])
 
-                            # Voeg een compliance kolom toe aan de batterijen
-                            df_batt['is_compliant'] = df_batt.apply(check_compliance, axis=1)
+                            df_batt['ok'] = df_batt.apply(is_compliant, axis=1)
                             
-                            # 3. Bereken totalen per fabrikant
+                            # Bereken totalen en fouten per bedrijf
                             counts = df_batt['manufacturer'].value_counts().reset_index()
                             counts.columns = ['name', 'Batterijen']
                             
-                            # 4. Bereken het aantal NIET-conforme batterijen per fabrikant
-                            non_compliant_df = df_batt[df_batt['is_compliant'] == False]
-                            issue_counts = non_compliant_df['manufacturer'].value_counts().reset_index()
-                            issue_counts.columns = ['name', '⚠️ Niet Conform']
+                            fails = df_batt[df_batt['ok'] == False]['manufacturer'].value_counts().reset_index()
+                            fails.columns = ['name', '⚠️ Niet Conform']
                             
-                            # 5. Voeg alles samen (Bedrijven + Totaal + Fouten)
+                            # Voeg alles samen
                             df_final = pd.merge(df_comp[['name', 'created_at']], counts, on='name', how='left')
-                            df_final = pd.merge(df_final, issue_counts, on='name', how='left').fillna(0)
+                            df_final = pd.merge(df_final, fails, on='name', how='left').fillna(0)
                             
-                            # Zet getallen om naar gehele getallen (ipv 1.0)
                             df_final['Batterijen'] = df_final['Batterijen'].astype(int)
                             df_final['⚠️ Niet Conform'] = df_final['⚠️ Niet Conform'].astype(int)
                             
-                            # 6. Weergave in de tabel
                             st.dataframe(
                                 df_final.rename(columns={'name': 'Bedrijf', 'created_at': 'Lid sinds'}), 
                                 use_container_width=True, 
                                 hide_index=True
                             )
                             
-                            # Totaaloverzicht melding
-                            total_issues = df_final['⚠️ Niet Conform'].sum()
-                            if total_issues > 0:
-                                st.error(f"Systeem-alert: Er zijn in totaal **{total_issues}** niet-conforme batterijen verspreid over uw partners.")
-                            else:
-                                st.success("Alle geregistreerde batterijen op het platform zijn momenteel conform.")
-                                
+                            if df_final['⚠️ Niet Conform'].sum() > 0:
+                                st.error(f"Systeem-alert: Er zijn in totaal {df_final['⚠️ Niet Conform'].sum()} batterijen met data-fouten.")
                         else:
                             st.info("Nog geen partnerdata beschikbaar.")
-                            
+
                     with col_right:
                         st.markdown("### 🛠️ Acties")
-                        
-                        # --- FORMULIER: PARTNER TOEVOEGEN ---
                         st.write("➕ **Voeg Partner toe**")
-                        with st.form("add_company_form", clear_on_submit=True):
+                        with st.form("add_company_form_admin", clear_on_submit=True):
                             new_comp_name = st.text_input("Naam van het bedrijf")
                             new_comp_pass = st.text_input("Wachtwoord", type="password")
-                            
-                            # Belangrijk: Gebruik form_submit_button binnen een form
-                            submit_add = st.form_submit_button("Opslaan", use_container_width=True)
-                            
-                            if submit_add:
+                            if st.form_submit_button("Opslaan", use_container_width=True):
                                 if new_comp_name and new_comp_pass:
                                     secure_password = hash_password(new_comp_pass) 
                                     new_payload = {
@@ -735,41 +714,15 @@ else:
                                         if resp.status_code in [200, 201]:
                                             st.success(f"✅ {new_comp_name} toegevoegd!")
                                             st.rerun()
-                                        else:
-                                            st.error("Fout bij opslaan.")
                         
                         st.divider()
-
-                        # --- VERWIJDEREN (BUITEN HET FORMULIER) ---
                         st.write("🗑️ **Verwijder Partner**")
                         company_names = [c.get('name') for c in all_companies]
                         if company_names:
-                            target_company = st.selectbox("Selecteer bedrijf", company_names, key="del_select_admin")
-                            if st.button(f"Verwijder {target_company}", type="secondary", use_container_width=True):
+                            target_company = st.selectbox("Selecteer bedrijf", company_names, key="del_admin")
+                            if st.button(f"Verwijder {target_company}", use_container_width=True):
                                 with httpx.Client() as client:
                                     resp = client.delete(f"{API_URL_COMPANIES}?name=eq.{target_company}", headers=headers)
                                     if resp.status_code in [200, 204]:
                                         st.success(f"{target_company} verwijderd.")
                                         st.rerun()
-                                    else:
-                                        st.error("Fout bij verwijderen.")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
