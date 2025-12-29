@@ -655,29 +655,61 @@ else:
                     # 3. LAYOUT IN TWEE KOLOMMEN
                     col_left, col_right = st.columns([2, 1])
 
-                    with col_left:
-                        st.markdown("### 🏢 Partner Overzicht")
+                   with col_left:
+                        st.markdown("### 🏢 Partner Overzicht & Compliance Status")
                         if all_companies and all_batteries:
-                            # Maak DataFrames
+                            # 1. Maak basis DataFrames
                             df_comp = pd.DataFrame(all_companies)
                             df_batt = pd.DataFrame(all_batteries)
                             
-                            # CORRECTIE: value_counts() ipv value_value_counts()
+                            # 2. Definieer Compliance Check Logica
+                            def check_compliance(item):
+                                # We kijken naar dezelfde criteria als in de monitor
+                                has_origin = item.get('mineral_origin') and len(str(item.get('mineral_origin'))) >= 5
+                                has_factory = item.get('factory_address')
+                                has_eol = item.get('eol_instructions') and len(str(item.get('eol_instructions'))) >= 20
+                                has_ce = item.get('ce_doc_reference')
+                                
+                                # Retourneer True als alles klopt, anders False
+                                return all([has_origin, has_factory, has_eol, has_ce])
+
+                            # Voeg een compliance kolom toe aan de batterijen
+                            df_batt['is_compliant'] = df_batt.apply(check_compliance, axis=1)
+                            
+                            # 3. Bereken totalen per fabrikant
                             counts = df_batt['manufacturer'].value_counts().reset_index()
                             counts.columns = ['name', 'Batterijen']
                             
-                            # Voeg data samen
-                            df_final = pd.merge(df_comp[['name', 'created_at']], counts, on='name', how='left').fillna(0)
-                            df_final['Batterijen'] = df_final['Batterijen'].astype(int)
+                            # 4. Bereken het aantal NIET-conforme batterijen per fabrikant
+                            non_compliant_df = df_batt[df_batt['is_compliant'] == False]
+                            issue_counts = non_compliant_df['manufacturer'].value_counts().reset_index()
+                            issue_counts.columns = ['name', '⚠️ Niet Conform']
                             
+                            # 5. Voeg alles samen (Bedrijven + Totaal + Fouten)
+                            df_final = pd.merge(df_comp[['name', 'created_at']], counts, on='name', how='left')
+                            df_final = pd.merge(df_final, issue_counts, on='name', how='left').fillna(0)
+                            
+                            # Zet getallen om naar gehele getallen (ipv 1.0)
+                            df_final['Batterijen'] = df_final['Batterijen'].astype(int)
+                            df_final['⚠️ Niet Conform'] = df_final['⚠️ Niet Conform'].astype(int)
+                            
+                            # 6. Weergave in de tabel
                             st.dataframe(
                                 df_final.rename(columns={'name': 'Bedrijf', 'created_at': 'Lid sinds'}), 
                                 use_container_width=True, 
                                 hide_index=True
                             )
+                            
+                            # Totaaloverzicht melding
+                            total_issues = df_final['⚠️ Niet Conform'].sum()
+                            if total_issues > 0:
+                                st.error(f"Systeem-alert: Er zijn in totaal **{total_issues}** niet-conforme batterijen verspreid over uw partners.")
+                            else:
+                                st.success("Alle geregistreerde batterijen op het platform zijn momenteel conform.")
+                                
                         else:
                             st.info("Nog geen partnerdata beschikbaar.")
-
+                            
                     with col_right:
                         st.markdown("### 🛠️ Acties")
                         
@@ -721,6 +753,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
