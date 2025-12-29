@@ -3,3 +3,4 @@ httpx
 qrcode[pil]
 pandas
 fpdf
+bcrypt
