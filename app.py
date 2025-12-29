@@ -169,113 +169,40 @@ if 'auth_mode' not in st.session_state:
     st.session_state.auth_mode = "landing"
 
 if "id" in q_params:
-    # --- PASPOORT VIEW (Geoptimaliseerd voor Mobiel) ---
+    # --- PASPOORT VIEW (Versie voor maximale snelheid en gsm-compatibiliteit) ---
     res = get_data(f"{API_URL_BATTERIES}?id=eq.{q_params['id']}")
     if res:
         d = res[0]
-        authority = is_authority()
         
-        # Aggressieve CSS om de Streamlit-padding te verwijderen en kaarten te stylen
-        st.markdown(f"""
-            <style>
-            /* Verwijder standaard Streamlit witruimte voor een full-screen mobiele look */
-            .block-container {{
-                padding: 1rem 1rem !important;
-                max-width: 100% !important;
-            }}
-            .main-card {{
-                background: white;
-                border-radius: 20px;
-                padding: 20px;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-                border-top: 10px solid {COLOR_ACCENT};
-            }}
-            .stat-grid {{
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-                margin: 20px 0;
-            }}
-            .stat-item {{
-                background: #f9fbf9;
-                padding: 15px 10px;
-                border-radius: 12px;
-                text-align: center;
-                border: 1px solid #eee;
-            }}
-            .stat-label {{ font-size: 0.75rem; color: #666; text-transform: uppercase; margin-bottom: 5px; }}
-            .stat-value {{ font-size: 1.1rem; font-weight: bold; color: {COLOR_ACCENT}; }}
-            .soh-bar-container {{
-                background: #eee;
-                border-radius: 10px;
-                height: 12px;
-                width: 100%;
-                margin: 10px 0;
-            }}
-            .soh-bar-fill {{
-                background: {COLOR_ACCENT};
-                height: 100%;
-                border-radius: 10px;
-                width: {d.get('soh_pct', 100)}%;
-            }}
-            </style>
-        """, unsafe_allow_html=True)
+        # Geen ingewikkelde HTML meer, maar strakke Streamlit layout
+        st.image(LOGO_URL, width=150)
+        st.title(f"{d.get('name')}")
+        st.caption(f"Batch: {d.get('batch_number')} | Model: {d.get('model_name')}")
+        
+        st.divider()
 
-        # Start van de HTML weergave
-        st.markdown(f"""
-            <div class="main-card">
-                <center>
-                    <img src="{LOGO_URL}" width="120">
-                    <h2 style='margin-bottom:0;'>{d.get('name')}</h2>
-                    <p style='color:grey; font-size:0.8rem;'>Batch: {d.get('batch_number')} | Model: {d.get('model_name')}</p>
-                </center>
-                
-                <div class="stat-grid">
-                    <div class="stat-item">
-                        <div class="stat-label">🌍 CO2 Impact</div>
-                        <div class="stat-value">{d.get('carbon_footprint', 0)} kg</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">♻️ Recycled Li</div>
-                        <div class="stat-value">{d.get('rec_lithium_pct', 0)}%</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">⚡ Capaciteit</div>
-                        <div class="stat-value">{d.get('capacity_kwh', 0)} kWh</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">🔄 Cycli</div>
-                        <div class="stat-value">{d.get('cycles_to_80', 0)}</div>
-                    </div>
-                </div>
+        # Gebruik kolommen die op mobiel netjes onder elkaar springen
+        col1, col2 = st.columns(2)
+        col1.metric("🌍 CO2 Impact", f"{d.get('carbon_footprint', 0)} kg")
+        col2.metric("♻️ Recycled Li", f"{d.get('rec_lithium_pct', 0)}%")
+        
+        col3, col4 = st.columns(2)
+        col3.metric("⚡ Capaciteit", f"{d.get('capacity_kwh', 0)} kWh")
+        col4.metric("🔄 Cycli", f"{d.get('cycles_to_80', 0)}")
 
-                <div style="margin-top:20px;">
-                    <span style="font-size:0.9rem; font-weight:bold;">🔋 Gezondheid (SoH): {d.get('soh_pct', 100)}%</span>
-                    <div class="soh-bar-container">
-                        <div class="soh-bar-fill"></div>
-                    </div>
-                </div>
+        st.divider()
+        
+        # Visuele batterijstatus
+        soh = d.get('soh_pct', 100)
+        st.write(f"**🔋 Batterij Gezondheid (SoH): {soh}%**")
+        st.progress(soh / 100)
 
-                <div style="background:#fff3cd; padding:15px; border-radius:10px; margin-top:20px; font-size:0.85rem; border-left: 5px solid #ffc107;">
-                    <strong>♻️ Einde levensduur:</strong><br>
-                    {d.get('eol_instructions', 'Lever in bij een officieel inzamelpunt.')}
-                </div>
-                
-                <p style='text-align:center; font-size:0.7rem; color:#aaa; margin-top:30px;'>
-                    ✅ Officieel EU Digital Product Passport<br>Verifieerbaar via Blockchain & Audits
-                </p>
-            </div>
-        """, unsafe_allow_html=True)
+        with st.expander("♻️ Einde levensduur instructies"):
+            st.write(d.get('eol_instructions', 'Lever in bij een officieel inzamelpunt.'))
 
-        # Alleen voor inspecteurs (expander werkt wel goed op mobiel)
-        if authority:
-            with st.expander("🕵️ Inspectie Details"):
-                st.write("**Producent:**", d.get("manufacturer"))
-                st.write("**Registratie:**", d.get("registration_date"))
-                st.write("**UUID:**", d.get("battery_uid"))
-
+        st.caption("✅ Officieel EU Digital Product Passport")
     else:
-        st.error("Ongeldige QR-code. Paspoort niet gevonden.")
+        st.error("Paspoort niet gevonden.")
         
 else:
     # --- DASHBOARD & LANDING PAGE LOGICA ---
@@ -608,6 +535,7 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
 
 
