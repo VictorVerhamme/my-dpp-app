@@ -432,96 +432,81 @@ else:
                         st.success(f"✅ {success_count} producten toegevoegd!"); st.rerun()
 
             # --- TAB: ADMIN CONTROL (Alleen voor SuperAdmin) ---
+            # --- TAB: ADMIN CONTROL ---
             if tab_admin:
                 with tab_admin:
-                    st.subheader("🔐 Systeembeheer & Bedrijfsoverzicht")
+                    st.subheader("🔐 Systeembeheer & Partneroverzicht")
                     
-                    # 1. DATA OPHALEN VOOR ADMIN
+                    # 1. DATA OPHALEN
                     all_companies_raw = get_data(API_URL_COMPANIES)
                     all_companies = [c for c in all_companies_raw if c.get('name') != "SuperAdmin"]
                     all_batteries = get_data(API_URL_BATTERIES)
                     
-                    # 2. STATISTIEKEN IN KAARTEN
-                    col_stat1, col_stat2, col_stat3 = st.columns(3)
-                    
-                    if all_batteries and all_companies:
-                        with col_stat1:
-                            st.metric("Totaal Bedrijven", len(all_companies))
-                        with col_stat2:
-                            st.metric("Totaal DPP's Live", len(all_batteries))
-                        with col_stat3:
-                            # Bereken totaal aantal scans over het hele platform
-                            total_scans = sum(item.get('views', 0) for item in all_batteries)
-                            st.metric("Totaal Scans Wereldwijd", total_scans)
+                    # 2. STATISTIEKEN (Bovenaan)
+                    c_st1, c_st2, c_st3 = st.columns(3)
+                    c_st1.metric("Geregistreerde Partners", len(all_companies))
+                    c_st2.metric("Totaal DPP's Live", len(all_batteries))
+                    total_scans = sum(item.get('views', 0) for item in all_batteries)
+                    c_st3.metric("Totaal Scans", total_scans)
                     
                     st.divider()
 
-                    # 3. GEDETAILLEERD OVERZICHT
+                    # 3. LAYOUT IN TWEE KOLOMMEN
                     col_left, col_right = st.columns([2, 1])
-                    
+
+                    with col_left:
+                        st.markdown("### 🏢 Partner Overzicht")
+                        if all_companies and all_batteries:
+                            # Maak een lijst van bedrijven met hun batterij-count
+                            df_comp = pd.DataFrame(all_companies)
+                            df_batt = pd.DataFrame(all_batteries)
+                            
+                            # Tel het aantal batterijen per fabrikant
+                            counts = df_batt['manufacturer'].value_value_counts().reset_index()
+                            counts.columns = ['name', 'Aantal Batterijen']
+                            
+                            # Voeg de counts samen met de bedrijvenlijst
+                            df_final = pd.merge(df_comp[['name', 'created_at']], counts, on='name', how='left').fillna(0)
+                            df_final['Aantal Batterijen'] = df_final['Aantal Batterijen'].astype(int)
+                            
+                            st.dataframe(
+                                df_final.rename(columns={'name': 'Bedrijf', 'created_at': 'Lid sinds'}), 
+                                use_container_width=True, 
+                                hide_index=True
+                            )
+                        else:
+                            st.info("Nog geen partnerdata beschikbaar.")
+
                     with col_right:
-                        st.markdown("### 🛠️ Systeembeheer")
-                        st.divider()
+                        st.markdown("### 🛠️ Acties")
                         
-                        # --- SECTIE A: PARTNER TOEVOEGEN (Met Formulier) ---
-                        st.write("➕ **Voeg een nieuwe Partner toe**")
-                        
+                        # --- FORMULIER: PARTNER TOEVOEGEN ---
+                        st.write("➕ **Voeg Partner toe**")
                         with st.form("add_company_form", clear_on_submit=True):
                             new_comp_name = st.text_input("Naam van het bedrijf")
                             new_comp_pass = st.text_input("Wachtwoord", type="password")
-                            
-                            # Binnen een formulier MOET je st.form_submit_button gebruiken
-                            submit_add = st.form_submit_button("Partner Registreren", use_container_width=True)
+                            submit_add = st.form_submit_button("Opslaan", use_container_width=True)
                             
                             if submit_add:
                                 if new_comp_name and new_comp_pass:
                                     secure_password = hash_password(new_comp_pass) 
-                                    new_payload = {
-                                        "name": new_comp_name,
-                                        "password": secure_password, 
-                                        "created_at": datetime.now().isoformat()
-                                    }
+                                    new_payload = {"name": new_comp_name, "password": secure_password, "created_at": datetime.now().isoformat()}
                                     with httpx.Client() as client:
                                         resp = client.post(API_URL_COMPANIES, json=new_payload, headers=headers)
                                         if resp.status_code in [200, 201]:
                                             st.success(f"✅ {new_comp_name} toegevoegd!")
                                             st.rerun()
-                                else:
-                                    st.warning("Vul alle velden in.")
-
-                        # --- SECTIE B: PARTNER VERWIJDEREN (BUITEN HET FORMULIER) ---
+                        
                         st.divider()
-                        st.write("🗑️ **Verwijder een Partner**")
-                        
+
+                        # --- VERWIJDEREN (Buiten het formulier) ---
+                        st.write("🗑️ **Verwijder Partner**")
                         company_names = [c.get('name') for c in all_companies]
-                        
                         if company_names:
-                            target_company = st.selectbox("Selecteer bedrijf", company_names)
-                            
-                            # Deze knop staat nu VEILIG buiten het bovenstaande formulier
-                            if st.button(f"Definitief verwijderen: {target_company}", type="secondary", use_container_width=True):
+                            target_company = st.selectbox("Selecteer bedrijf", company_names, key="del_select")
+                            if st.button(f"Verwijder {target_company}", type="secondary", use_container_width=True):
                                 with httpx.Client() as client:
                                     resp = client.delete(f"{API_URL_COMPANIES}?name=eq.{target_company}", headers=headers)
                                     if resp.status_code in [200, 204]:
-                                        st.success(f"✅ {target_company} verwijderd.")
+                                        st.success("Verwijderd.")
                                         st.rerun()
-                                    else:
-                                        st.error("Fout bij verwijderen.")
-                        else:
-                            st.info("Geen partners om te verwijderen.")
-                            
-                        st.markdown("---")
-                        # Bestaande systeem status info
-                        st.success("API & Database: Verbonden")
-
-
-
-
-
-
-
-
-
-
-
-
