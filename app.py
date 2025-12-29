@@ -169,65 +169,87 @@ if 'auth_mode' not in st.session_state:
     st.session_state.auth_mode = "landing"
 
 if "id" in q_params:
-    # --- PASPOORT VIEW (SCAN) ---
+    # --- PASPOORT VIEW (Geoptimaliseerd voor Mobiel) ---
     res = get_data(f"{API_URL_BATTERIES}?id=eq.{q_params['id']}")
     if res:
         d = res[0]
         authority = is_authority()
         
-        # 1. Header met Logo en Naam
-        st.markdown(f"<div style='background:white; padding:40px; border-radius:25px; text-align:center; border-top:10px solid {COLOR_ACCENT}; shadow: 0 4px 6px rgba(0,0,0,0.1);'>", unsafe_allow_html=True)
-        st.image(LOGO_URL, width=220)
-        st.title(f"🔋 {d.get('name')}")
-        st.write(f"**Model ID:** {d.get('model_name', 'N/A')} | **Batch:** {d.get('batch_number', 'N/A')}")
+        # Mobiele CSS-injectie voor betere weergave
+        st.markdown("""
+            <style>
+            .mobile-container {
+                background-color: white;
+                padding: 20px;
+                border-radius: 15px;
+                border-top: 8px solid #8FAF9A;
+                margin: -10px; /* Haalt zijmarges op mobiel weg */
+                box-shadow: 0px 4px 10px rgba(0,0,0,0.05);
+            }
+            .metric-box {
+                background-color: #F8F9F9;
+                padding: 15px;
+                border-radius: 10px;
+                margin-bottom: 10px;
+                text-align: center;
+            }
+            .stMetric {
+                text-align: center !important;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="mobile-container">', unsafe_allow_html=True)
+        
+        # 1. Header
+        st.image(LOGO_URL, width=150)
+        st.title(d.get('name', 'Batterij Paspoort'))
+        st.caption(f"ID: {d.get('battery_uid', 'N/A')}")
         
         st.divider()
 
-        # 2. Milieu & Duurzaamheid (Consumentvriendelijk)
-        st.subheader("🌿 Duurzaamheid & Impact")
-        c1, c2 = st.columns(2)
-        with c1:
-            st.metric("🌍 CO₂ Voetafdruk", f"{d.get('carbon_footprint', 0)} kg", help="De totale uitstoot tijdens de productie.")
-            st.caption("Deze batterij heeft een lage klimaatimpact vergeleken met de industriestandaard.")
-        with c2:
-            st.metric("♻️ Gerecycled Lithium", f"{d.get('rec_lithium_pct', 0)}%", help="Percentage lithium dat is teruggewonnen uit oude batterijen.")
-            st.caption(f"Bevat herwonnen materialen om de winning van nieuwe grondstoffen te beperken.")
-
-        st.divider()
-
-        # 3. Prestaties & Conditie
-        st.subheader("📊 Batterij Status")
-        p1, p2, p3 = st.columns(3)
-        with p1:
-            st.write("**Gezondheid (SoH)**")
-            st.title(f"{d.get('soh_pct', 100)}%")
-            st.progress(d.get('soh_pct', 100) / 100)
-        with p2:
-            st.write("**Capaciteit**")
-            st.title(f"⚡ {d.get('capacity_kwh', 0)} kWh")
-        with p3:
-            st.write("**Levensduur**")
-            st.title(f"🔄 {d.get('cycles_to_80', 0)}")
-            st.caption("Laadcycli tot 80%")
-
-        st.divider()
-
-        # 4. Circulariteit (EOL)
-        st.subheader("♻️ Wat te doen na gebruik?")
-        st.warning(f"**Instructies voor inlevering:**\n\n{d.get('eol_instructions') or 'Volg de lokale regels voor chemisch afval.'}")
+        # 2. Belangrijkste Metrics (Groot & Duidelijk)
+        # We gebruiken metrics die op mobiel onder elkaar komen te staan
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            st.metric("🌍 Klimaatimpact", f"{d.get('carbon_footprint', 0)} kg")
+        with col_m2:
+            st.metric("♻️ Recycled", f"{d.get('rec_lithium_pct', 0)}%")
         
-        # 5. Extra info voor overheden (indien ingelogd/via role)
+        st.divider()
+
+        # 3. Batterij Gezondheid (Visueel)
+        st.markdown("### 🔋 Batterij Conditie")
+        soh = d.get('soh_pct', 100)
+        st.write(f"Huidige Gezondheid: **{soh}%**")
+        st.progress(soh / 100)
+        
+        # Extra details in kleine blokken
+        st.write("---")
+        det1, det2 = st.columns(2)
+        det1.write(f"⚡ **Capaciteit**\n{d.get('capacity_kwh', 0)} kWh")
+        det2.write(f"🔄 **Laadcycli**\n{d.get('cycles_to_80', 0)}")
+
+        st.divider()
+
+        # 4. Circulariteit & Instructies
+        st.markdown("### ♻️ Einde Levensduur")
+        st.info(d.get('eol_instructions') or "Lever dit product in bij een officieel batterij-inzamelpunt.")
+        
+        # 5. Admin/Inspectie View
         if authority:
-            with st.expander("🕵️ Administratieve Audit Trail (Enkel Inspectie)"):
-                st.write("**UUID:**", d.get("battery_uid"))
+            with st.expander("🕵️ Inspectie Details"):
                 st.write("**Producent:**", d.get("manufacturer"))
-                st.write("**Registratiedatum:**", d.get("registration_date"))
-                st.write("**Aantal scans:**", d.get("views", 0))
-
+                st.write("**Batch:**", d.get("batch_number"))
+                st.write("**Geregistreerd:**", d.get("registration_date"))
+        
         st.markdown("</div>", unsafe_allow_html=True)
+        
+        # Footer voor consumentenvertrouwen
+        st.caption("✅ Geverifieerd EU Digital Product Passport")
     else:
-        st.error("Dit productpaspoort kon niet worden gevonden in de database.")
-
+        st.error("Ongeldige QR-code. Paspoort niet gevonden.")
+        
 else:
     # --- DASHBOARD & LANDING PAGE LOGICA ---
     if 'company' not in st.session_state: st.session_state.company = None
@@ -559,6 +581,7 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
 
 
