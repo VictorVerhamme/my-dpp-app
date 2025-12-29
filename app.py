@@ -165,25 +165,32 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # --- 4. APP LOGICA ---
+
+# 1. INITIALISATIE: Zorg dat deze variabelen altijd bestaan in het geheugen
+if 'auth_mode' not in st.session_state:
+    st.session_state.auth_mode = "landing"
+
+if 'company' not in st.session_state:
+    st.session_state.company = None
+
+# Haal de parameters uit de URL op
 q_params = st.query_params
 
+# 2. ROUTING: Ben je een consument (scan) of een beheerder (portaal)?
 if "id" in q_params:
+    # SNELLE REDIRECT: Stuur gsm-gebruikers direct naar de snelle GitHub-pagina
     st.info("Scan voltooid. U wordt doorverwezen naar het snelle mobiele portaal...")
-    # Optioneel: Automatische redirect (werkt in de meeste browsers)
     st.markdown(f'<meta http-equiv="refresh" content="0;URL=\'https://victorverhamme.github.io/my-dpp-app/passport.html?id={q_params["id"]}\'" />', unsafe_allow_html=True)
-    st.stop()
+    st.stop() # Stop de rest van de app hier voor consumenten
     
 else:
     # --- DASHBOARD & LANDING PAGE LOGICA ---
-    if 'company' not in st.session_state: st.session_state.company = None
-
     if not st.session_state.company:
         if st.session_state.auth_mode == "landing":
             # --- STAP A: DE LANDING PAGE ---
-            # We gebruiken kolommen voor marges aan de zijkant (Layout: 1-3-1)
             _, main_col, _ = st.columns([1, 3, 1]) 
-
             with main_col:
+                # ... de rest van je landing page code (logo, tekst, knop) ...
                 st.image(LOGO_URL, width=350)
                 
                 # Hoofdtekst links uitgelijnd
@@ -504,6 +511,7 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
 
 
