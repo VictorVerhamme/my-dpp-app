@@ -8,6 +8,7 @@ import tempfile
 import uuid
 import os
 from datetime import datetime
+import bcrypt
 
 # --- 1. CONFIGURATIE ---
 SUPABASE_URL = "https://nihebcwfjtezkufbxcnq.supabase.co"
@@ -29,6 +30,16 @@ headers = {
 }
 
 # --- 2. HELPERS ---
+def hash_password(password):
+    # Maak een veilig "gehashed" wachtwoord
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
+
+def check_password(password, hashed):
+    # Vergelijk het ingevoerde wachtwoord met de hash uit de database
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+    
 def is_authority():
     return st.query_params.get("role") == "inspectie"
 
@@ -248,11 +259,18 @@ else:
             with col_log:
                 if st.button("Inloggen"):
                     res = get_data(f"{API_URL_COMPANIES}?name=eq.{u}")
-                    if res and res[0]['password'] == p:
-                        st.session_state.company = res[0]['name']
-                        st.rerun()
-                    else: st.error("Inloggegevens onjuist.")
+                    if res:
+                        stored_hash = res[0]['password']
+                        # Gebruik de helper functie om te verifiëren
+                        if check_password(p, stored_hash):
+                            st.session_state.company = res[0]['name']
+                            st.rerun()
+                        else:
+                            st.error("Wachtwoord onjuist.")
+                    else:
+                        st.error("Gebruiker niet gevonden.")
             st.markdown('</div>', unsafe_allow_html=True)
+            
     else:
         # SIDEBAR
         st.sidebar.image(LOGO_URL, width=150)
@@ -445,42 +463,38 @@ else:
                         else:
                             st.warning("Geen bedrijfsgegevens gevonden.")
 
-                    with col_right:
-                        st.markdown("### 🛠️ Systeembeheer")
+                    with st.form("add_company_form", clear_on_submit=True):
+                        new_comp_name = st.text_input("Naam van het bedrijf")
+                        new_comp_pass = st.text_input("Wachtwoord voor dit bedrijf", type="password")
                         
-                        # --- SECTIE: NIEUWE PARTNER TOEVOEGEN ---
-                        st.markdown("---")
-                        st.write("➕ **Voeg een nieuwe Partner toe**")
-                        
-                        with st.form("add_company_form", clear_on_submit=True):
-                            new_comp_name = st.text_input("Naam van het bedrijf")
-                            new_comp_pass = st.text_input("Wachtwoord voor dit bedrijf", type="password")
-                            
-                            if st.form_submit_button("Partner Registreren", use_container_width=True):
-                                if new_comp_name and new_comp_pass:
-                                    # Controleer of het bedrijf al bestaat
-                                    check_comp = get_data(f"{API_URL_COMPANIES}?name=eq.{new_comp_name}")
-                                    
-                                    if check_comp:
-                                        st.error(f"❌ Bedrijf '{new_comp_name}' bestaat al.")
-                                    else:
-                                        # Payload voor het nieuwe bedrijf
-                                        new_payload = {
-                                            "name": new_comp_name,
-                                            "password": new_comp_pass,
-                                            "created_at": datetime.now().isoformat()
-                                        }
-                                        
-                                        with httpx.Client() as client:
-                                            resp = client.post(API_URL_COMPANIES, json=new_payload, headers=headers)
-                                            if resp.status_code in [200, 201]:
-                                                st.success(f"✅ Bedrijf '{new_comp_name}' succesvol toegevoegd!")
-                                                st.rerun()
-                                            else:
-                                                st.error(f"❌ Fout bij toevoegen: {resp.text}")
+                        if st.form_submit_button("Partner Registreren", use_container_width=True):
+                            if new_comp_name and new_comp_pass:
+                                # Controleer of het bedrijf al bestaat
+                                check_comp = get_data(f"{API_URL_COMPANIES}?name=eq.{new_comp_name}")
+                                
+                                if check_comp:
+                                    st.error(f"❌ Bedrijf '{new_comp_name}' bestaat al.")
                                 else:
-                                    st.warning("Vul a.u.b. alle velden in.")
-                        
+                                    # --- STAP 3: HIER WORDT HET WACHTWOORD VEILIG GEMAAKT ---
+                                    secure_password = hash_password(new_comp_pass) 
+                                    
+                                    # Payload voor het nieuwe bedrijf (gebruikt nu de beveiligde hash)
+                                    new_payload = {
+                                        "name": new_comp_name,
+                                        "password": secure_password, 
+                                        "created_at": datetime.now().isoformat()
+                                    }
+                                    
+                                    with httpx.Client() as client:
+                                        resp = client.post(API_URL_COMPANIES, json=new_payload, headers=headers)
+                                        if resp.status_code in [200, 201]:
+                                            st.success(f"✅ Bedrijf '{new_comp_name}' succesvol toegevoegd!")
+                                            st.rerun()
+                                        else:
+                                            st.error(f"❌ Fout bij toevoegen: {resp.text}")
+                            else:
+                                st.warning("Vul a.u.b. alle velden in.")
+            
                         # --- NIEUW: BEDRIJF VERWIJDEREN SECTIE ---
                         st.markdown("---")
                         st.write("🗑️ **Verwijder een Partner**")
@@ -511,6 +525,7 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
 
 
