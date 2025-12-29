@@ -634,40 +634,49 @@ else:
                         st.success(f"✅ {success_count} producten succesvol gedigitaliseerd!"); st.rerun()
                         
             # --- TAB: ADMIN CONTROL (Alleen voor SuperAdmin) ---
-            # --- TAB: ADMIN CONTROL (Volledig Gecorrigeerd) ---
             if tab_admin:
                 with tab_admin:
-                    st.subheader("🔐 Systeembeheer & Partneroverzicht")
+                    # De subtitel is nu hernoemd naar enkel Systeembeheer
+                    st.subheader("🔐 Systeembeheer")
                     
                     # 1. DATA OPHALEN
                     all_companies_raw = get_data(API_URL_COMPANIES)
                     all_companies = [c for c in all_companies_raw if c.get('name') != "SuperAdmin"]
                     all_batteries = get_data(API_URL_BATTERIES)
                     
-                    # 2. STATISTIEKEN (Bovenaan)
-                    c_st1, c_st2 = st.columns(2)
+                    # 2. COMPLIANCE BEREKENING (Voor de statistieken)
+                    def is_compliant(item):
+                        # Controleert op de 3 meest kritieke velden voor de EU-norm
+                        has_origin = item.get('mineral_origin') and len(str(item.get('mineral_origin'))) >= 5
+                        has_factory = item.get('factory_address')
+                        has_eol = item.get('eol_instructions') and len(str(item.get('eol_instructions'))) >= 20
+                        return all([has_origin, has_factory, has_eol])
+
+                    total_non_compliant = 0
+                    if all_batteries:
+                        df_check = pd.DataFrame(all_batteries)
+                        df_check['ok'] = df_check.apply(is_compliant, axis=1)
+                        total_non_compliant = len(df_check[df_check['ok'] == False])
+
+                    # 3. STATISTIEKEN (Nu met 3 kolommen voor extra inzicht)
+                    c_st1, c_st2, c_st3 = st.columns(3)
                     c_st1.metric("Geregistreerde Partners", len(all_companies))
-                    c_st2.metric("Totaal geregistreerde batterijen", len(all_batteries))
+                    c_st2.metric("Totaal Batterijen", len(all_batteries))
+                    # Nieuwe statistiek direct in het overzicht
+                    c_st3.metric("⚠️ Niet Conform (Totaal)", total_non_compliant, delta_color="inverse")
                     
                     st.divider()
 
-                    # 3. LAYOUT IN TWEE KOLOMMEN
+                    # 4. LAYOUT IN TWEE KOLOMMEN
                     col_left, col_right = st.columns([2, 1])
 
                     with col_left:
                         st.markdown("### 🏢 Partner Overzicht & Compliance")
                         if all_companies and all_batteries:
-                            # Maak DataFrames
                             df_comp = pd.DataFrame(all_companies)
                             df_batt = pd.DataFrame(all_batteries)
                             
-                            # COMPLIANCE LOGICA: Wat is een 'foute' batterij?
-                            def is_compliant(item):
-                                has_origin = item.get('mineral_origin') and len(str(item.get('mineral_origin'))) >= 5
-                                has_factory = item.get('factory_address')
-                                has_eol = item.get('eol_instructions') and len(str(item.get('eol_instructions'))) >= 20
-                                return all([has_origin, has_factory, has_eol])
-
+                            # Pas de compliance check toe op de tabel
                             df_batt['ok'] = df_batt.apply(is_compliant, axis=1)
                             
                             # Bereken totalen en fouten per bedrijf
@@ -690,8 +699,8 @@ else:
                                 hide_index=True
                             )
                             
-                            if df_final['⚠️ Niet Conform'].sum() > 0:
-                                st.error(f"Systeem-alert: Er zijn in totaal {df_final['⚠️ Niet Conform'].sum()} batterijen met data-fouten.")
+                            if total_non_compliant > 0:
+                                st.error(f"Actie vereist: Er zijn momenteel {total_non_compliant} batterijen met onvolledige compliance-data.")
                         else:
                             st.info("Nog geen partnerdata beschikbaar.")
 
