@@ -4,3 +4,4 @@ qrcode[pil]
 pandas
 fpdf
 bcrypt
+plotly
