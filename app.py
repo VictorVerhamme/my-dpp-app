@@ -9,6 +9,7 @@ import uuid
 import os
 from datetime import datetime
 import bcrypt
+import plotly.express as px
 
 # --- 1. CONFIGURATIE ---
 SUPABASE_URL = "https://nihebcwfjtezkufbxcnq.supabase.co"
@@ -665,6 +666,37 @@ else:
                     
                     st.divider()
 
+                    # --- NIEUW: VISUELE COMPLIANCE ANALYSE ---
+                    if all_batteries:
+                        st.markdown("### 📊 Status van de vloot")
+                        
+                        # Data voorbereiden voor het diagram
+                        compliant_count = len(all_batteries) - total_non_compliant
+                        chart_data = pd.DataFrame({
+                            "Status": ["Conform ✅", "Inbreuk ⚠️"],
+                            "Aantal": [compliant_count, total_non_compliant]
+                        })
+
+                        # Kleuren definiëren (Zacht groen en waarschuwend rood)
+                        fig = px.pie(
+                            chart_data, 
+                            values='Aantal', 
+                            names='Status',
+                            hole=0.4, # Maakt er een 'donut' van, ziet er moderner uit
+                            color='Status',
+                            color_discrete_map={'Conform ✅': '#8FAF9A', 'Inbreuk ⚠️': '#d9534f'}
+                        )
+
+                        # Layout optimaliseren
+                        fig.update_layout(
+                            showlegend=True,
+                            margin=dict(t=0, b=0, l=0, r=0),
+                            height=300
+                        )
+
+                        st.plotly_chart(fig, use_container_width=True)
+                    st.divider()
+
                     # 4. LAYOUT IN TWEE KOLOMMEN
                     col_left, col_right = st.columns([2, 1])
 
@@ -731,3 +763,4 @@ else:
                                 if st.button(f"Bevestig Verwijdering van {to_delete}", type="secondary", use_container_width=True):
                                     httpx.delete(f"{API_URL_COMPANIES}?name=eq.{to_delete}", headers=headers)
                                     st.rerun()
+
