@@ -410,6 +410,43 @@ else:
                     sel = st.selectbox("Selecteer product voor PDF", df['name'].tolist())
                     item = df[df['name'] == sel].iloc[0]
                     st.download_button("📥 Download Audit PDF", generate_certificate(item), f"Audit_{sel}.pdf", use_container_width=True)
+                    # --- STAP 2: BATTERIJ BEWERKEN (Toevoeging) ---
+                    if st.session_state.company != "SuperAdmin":
+                        st.divider()
+                        with st.expander("📝 Status Update (SOH / Cycli aanpassen)"):
+                            st.write("Pas hier de actuele status van een batterij aan na inspectie.")
+                            
+                            # We maken een lijst van UID's zodat de gebruiker de juiste batterij kiest
+                            batt_list = {f"{b['name']} (ID: {b['battery_uid']})": b for b in raw_data}
+                            selected_uid_label = st.selectbox("Welke batterij wilt u bijwerken?", options=list(batt_list.keys()), key="edit_selector")
+                            
+                            selected_batt = batt_list[selected_uid_label]
+
+                            # Bewerk-formulier
+                            with st.form(f"edit_form_{selected_batt['battery_uid']}"):
+                                col_e1, col_e2 = st.columns(2)
+                                with col_e1:
+                                    up_soh = st.slider("Actuele State of Health (%)", 0, 100, int(selected_batt.get('soh_pct', 100)))
+                                with col_e2:
+                                    up_cycles = st.number_input("Nieuw aantal laadcycli", value=int(selected_batt.get('cycles_to_80', 0)))
+                                
+                                up_eol = st.text_area("Update End-of-life instructies", value=selected_batt.get('eol_instructions', ""))
+                                
+                                if st.form_submit_button("Wijzigingen Opslaan", use_container_width=True):
+                                    update_payload = {
+                                        "soh_pct": up_soh,
+                                        "cycles_to_80": up_cycles,
+                                        "eol_instructions": up_eol,
+                                        "registration_date": datetime.now().strftime("%Y-%m-%d %H:%M") # Update timestamp
+                                    }
+                                    
+                                    status = update_data(API_URL_BATTERIES, selected_batt['id'], update_payload)
+                                    
+                                    if status in [200, 204]:
+                                        st.success(f"✅ Status voor {selected_batt['battery_uid']} bijgewerkt!")
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Fout bij het bijwerken van de database.")
                 else:
                     st.info("Geen producten gevonden.")
 
@@ -528,5 +565,6 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
