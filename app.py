@@ -85,7 +85,7 @@ def generate_certificate(data):
     # 2. HEADER
     pdf.set_font("Arial", 'B', 18)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(200, 15, txt="EU Digital Product Passport - Compliance Audit", ln=True, align='L')
+    pdf.cell(200, 15, txt="EU Digital Product Passport", ln=True, align='L')
     
     pdf.set_font("Arial", 'I', 10)
     pdf.cell(200, 10, txt=f"Gegenereerd op: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align='L')
@@ -630,6 +630,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
