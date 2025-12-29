@@ -636,7 +636,6 @@ else:
             # --- TAB: ADMIN CONTROL (Alleen voor SuperAdmin) ---
             if tab_admin:
                 with tab_admin:
-                    # De subtitel is nu enkel Systeembeheer
                     st.subheader("🔐 Systeembeheer")
                     
                     # 1. DATA OPHALEN
@@ -646,10 +645,11 @@ else:
                     
                     # 2. COMPLIANCE BEREKENING
                     def is_compliant(item):
-                        has_origin = item.get('mineral_origin') and len(str(item.get('mineral_origin'))) >= 5
-                        has_factory = item.get('factory_address')
-                        has_eol = item.get('eol_instructions') and len(str(item.get('eol_instructions'))) >= 20
-                        return all([has_origin, has_factory, has_eol])
+                        return all([
+                            item.get('mineral_origin') and len(str(item.get('mineral_origin'))) >= 5,
+                            item.get('factory_address'),
+                            len(str(item.get('eol_instructions',''))) >= 20
+                        ])
 
                     total_non_compliant = 0
                     if all_batteries:
@@ -657,88 +657,68 @@ else:
                         df_check['ok'] = df_check.apply(is_compliant, axis=1)
                         total_non_compliant = len(df_check[df_check['ok'] == False])
 
-                    # 3. STATISTIEKEN
-                    c_st1, c_st2, c_st3 = st.columns(3)
-                    c_st1.metric("Geregistreerde Partners", len(all_companies))
-                    c_st2.metric("Totaal Batterijen", len(all_batteries))
-                    c_st3.metric("⚠️ Niet Conform (Totaal)", total_non_compliant, delta_color="inverse")
+                    # 3. DASHBOARD METRICS
+                    m1, m2, m3 = st.columns(3)
+                    m1.metric("Partners", len(all_companies))
+                    m2.metric("Totaal Batterijen", len(all_batteries))
+                    m3.metric("⚠️ Inbreuken", total_non_compliant, delta=f"{total_non_compliant} acties vereist", delta_color="inverse")
                     
                     st.divider()
 
-                    # 4. LAYOUT
+                    # 4. TABEL & ACTIES
                     col_left, col_right = st.columns([2, 1])
 
                     with col_left:
-                        st.markdown("### 🏢 Partner Overzicht & Compliance")
+                        st.markdown("### 🏢 Partner Status")
                         if all_companies and all_batteries:
                             df_comp = pd.DataFrame(all_companies)
                             df_batt = pd.DataFrame(all_batteries)
                             df_batt['ok'] = df_batt.apply(is_compliant, axis=1)
                             
-                            counts = df_batt['manufacturer'].value_counts().reset_index()
-                            counts.columns = ['name', 'Batterijen']
-                            
-                            fails = df_batt[df_batt['ok'] == False]['manufacturer'].value_counts().reset_index()
-                            fails.columns = ['name', '⚠️ Niet Conform']
+                            counts = df_batt['manufacturer'].value_counts().reset_index().rename(columns={'count':'Totaal','manufacturer':'name'})
+                            fails = df_batt[df_batt['ok'] == False]['manufacturer'].value_counts().reset_index().rename(columns={'count':'⚠️ Fouten','manufacturer':'name'})
                             
                             df_final = pd.merge(df_comp[['name', 'created_at']], counts, on='name', how='left')
                             df_final = pd.merge(df_final, fails, on='name', how='left').fillna(0)
                             
-                            df_final['Batterijen'] = df_final['Batterijen'].astype(int)
-                            df_final['⚠️ Niet Conform'] = df_final['⚠️ Niet Conform'].astype(int)
-                            
-                            # Hernoemen voor de weergave
-                            df_display = df_final.rename(columns={'name': 'Bedrijf', 'created_at': 'Lid sinds'})
-                            st.dataframe(df_display, use_container_width=True, hide_index=True)
-                            
-                            if total_non_compliant > 0:
-                                st.error(f"Er zijn momenteel {total_non_compliant} batterijen met data-fouten.")
+                            st.dataframe(
+                                df_final.rename(columns={'name': 'Bedrijf', 'created_at': 'Lid sinds', 'Totaal': 'Units'}), 
+                                use_container_width=True, hide_index=True
+                            )
                         else:
-                            st.info("Nog geen partnerdata beschikbaar.")
+                            st.info("Geen partnerdata beschikbaar.")
 
                     with col_right:
-                        st.markdown("### 🛠️ Acties")
+                        st.markdown("### 🛠️ Beheer")
                         
-                        # --- NIEUW: COMPLIANCE HERINNERING ---
-                        st.write("📧 **Compliance Herinnering**")
-                        partners_with_issues = df_final[df_final['⚠️ Niet Conform'] > 0]
+                        # --- MODERNE MAIL FUNCTIE (POPOVER) ---
+                        partners_with_issues = df_final[df_final['⚠️ Niet Conform'] > 0] if 'df_final' in locals() else pd.DataFrame()
                         
                         if not partners_with_issues.empty:
-                            target_partner = st.selectbox("Selecteer partner voor herinnering", partners_with_issues['name'].tolist())
-                            num_errors = partners_with_issues[partners_with_issues['name'] == target_partner]['⚠️ Niet Conform'].values[0]
-                            
-                            # Pre-filled email tekst
-                            email_subject = "ACTIE VEREIST: Compliance Update Batterij Paspoorten"
-                            email_body = f"Beste team van {target_partner},\n\nUit onze systeemcontrole blijkt dat er momenteel {num_errors} batterij(en) in uw overzicht staan die niet volledig voldoen aan de EU-normen.\n\nZou u de ontbrekende gegevens (zoals herkomst van mineralen of EOL-instructies) zo spoedig mogelijk willen aanvullen via het dashboard?\n\nMet vriendelijke groet,\nAdmin Team"
-                            
-                            st.text_area("Concept e-mail:", value=email_body, height=180)
-                            
-                            # Mailto link generator voor makkelijk verzenden
-                            import urllib.parse
-                            safe_subject = urllib.parse.quote(email_subject)
-                            safe_body = urllib.parse.quote(email_body)
-                            mailto_url = f"mailto:?subject={safe_subject}&body={safe_body}"
-                            
-                            st.markdown(f'<a href="{mailto_url}" target="_blank"><button style="width:100%; background-color:#d9534f; color:white; border:none; padding:10px; border-radius:12px; cursor:pointer;">Open Mail Programma</button></a>', unsafe_allow_html=True)
-                        else:
-                            st.success("Alle partners zijn conform.")
-
-                        st.divider()
-                        st.write("➕ **Voeg Partner toe**")
-                        with st.form("add_comp_form_final", clear_on_submit=True):
-                            new_name = st.text_input("Bedrijfsnaam")
-                            new_pass = st.text_input("Wachtwoord", type="password")
-                            if st.form_submit_button("Opslaan", use_container_width=True):
-                                if new_name and new_pass:
-                                    payload = {"name": new_name, "password": hash_password(new_pass), "created_at": datetime.now().isoformat()}
-                                    httpx.post(API_URL_COMPANIES, json=payload, headers=headers)
-                                    st.rerun()
+                            with st.popover("📧 Stuur Herinnering", use_container_width=True):
+                                target = st.selectbox("Selecteer Partner", partners_with_issues['name'].tolist())
+                                err_count = partners_with_issues[partners_with_issues['name'] == target]['⚠️ Niet Conform'].values[0]
+                                
+                                subject = f"Compliance Update: {target}"
+                                body = f"Beste team van {target},\n\nEr zijn {int(err_count)} batterijen die niet voldoen aan de EU-normen. Graag z.s.m. corrigeren.\n\nGroet, Admin."
+                                
+                                import urllib.parse
+                                mailto = f"mailto:?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
+                                st.markdown(f'<a href="{mailto}" style="text-decoration:none;"><div style="background-color:#8FAF9A; color:white; padding:10px; border-radius:10px; text-align:center;">Verzend naar {target}</div></a>', unsafe_allow_html=True)
                         
-                        st.divider()
-                        st.write("🗑️ **Verwijder Partner**")
-                        company_names = [c.get('name') for c in all_companies]
-                        if company_names:
-                            to_del = st.selectbox("Selecteer bedrijf", company_names, key="del_final")
-                            if st.button(f"Verwijder {to_del}", use_container_width=True):
-                                httpx.delete(f"{API_URL_COMPANIES}?name=eq.{to_del}", headers=headers)
-                                st.rerun()
+                        # --- OVERIGE ACTIES ---
+                        with st.expander("➕ Nieuwe Partner"):
+                            with st.form("add_comp_final", clear_on_submit=True):
+                                n_n = st.text_input("Naam")
+                                n_p = st.text_input("Wachtwoord", type="password")
+                                if st.form_submit_button("Opslaan", use_container_width=True):
+                                    httpx.post(API_URL_COMPANIES, json={"name":n_n, "password":hash_password(n_p), "created_at":datetime.now().isoformat()}, headers=headers)
+                                    st.rerun()
+
+                        with st.expander("🗑️ Verwijder Partner"):
+                            c_names = [c.get('name') for c in all_companies]
+                            if c_names:
+                                to_del = st.selectbox("Kies Bedrijf", c_names, key="del_final")
+                                if st.button(f"Bevestig Verwijdering", type="secondary", use_container_width=True):
+                                    httpx.delete(f"{API_URL_COMPANIES}?name=eq.{to_del}", headers=headers)
+                                    st.rerun()
