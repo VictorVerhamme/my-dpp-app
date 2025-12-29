@@ -421,6 +421,20 @@ else:
                     st.table(df_issues)
                     
                     st.info("💡 **Advies:** Ga naar het Dashboard en gebruik de 'Update' functie om de ontbrekende gegevens aan te vullen.")
+                    # --- EXPORT FUNCTIE TOEVOEGEN ---
+                    st.divider()
+                    st.write("📂 **Rapportage voor Technisch Team**")
+                    
+                    # Zet de tabel om naar een CSV-bestand
+                    csv_report = df_issues.to_csv(index=False).encode('utf-8')
+                    
+                    st.download_button(
+                        label="📥 Download Compliance Rapport (CSV)",
+                        data=csv_report,
+                        file_name=f"Compliance_Rapport_{st.session_state.company}_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime="text/csv",
+                        use_container_width=True
+                    )
                 else:
                     st.success("✅ Gefeliciteerd! Al uw geregistreerde batterijen voldoen aan de huidige compliance-checks.")
                     
@@ -707,6 +721,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
