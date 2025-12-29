@@ -346,8 +346,6 @@ else:
                 tab_reg, tab_fleet, tab_bulk = st.tabs(["✨ Nieuwe Registratie", "📊 Vlootoverzicht", "📂 Bulk Import"])
                 tab_admin = None # Bestaat niet voor normale gebruikers
 
-            # --- TAB 1: REGISTRATIE (Alleen voor gebruikers) ---
-            if tab_reg:
                 # --- TAB 1: REGISTRATIE (Uitgebreid voor 8 Pijlers) ---
             if tab_reg:
                 with tab_reg:
@@ -610,6 +608,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
