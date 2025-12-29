@@ -404,7 +404,7 @@ else:
                 else:
                     st.info("Geen producten gevonden.")
 
-# --- TAB 3: BULK IMPORT ---
+            # --- TAB 3: BULK IMPORT ---
             if tab_bulk:
                 with tab_bulk:
                     st.subheader("📂 Bulk Import via CSV")
@@ -432,7 +432,6 @@ else:
                         st.success(f"✅ {success_count} producten toegevoegd!"); st.rerun()
 
             # --- TAB: ADMIN CONTROL (Alleen voor SuperAdmin) ---
-            # --- TAB: ADMIN CONTROL ---
             if tab_admin:
                 with tab_admin:
                     st.subheader("🔐 Systeembeheer & Partneroverzicht")
@@ -443,11 +442,11 @@ else:
                     all_batteries = get_data(API_URL_BATTERIES)
                     
                     # 2. STATISTIEKEN (Bovenaan)
-                    c_st1, c_st2, c_st3 = st.columns(3)
+                    c_st1, c_st2 = st.columns(2)
                     c_st1.metric("Geregistreerde Partners", len(all_companies))
-                    c_st2.metric("Totaal DPP's Live", len(all_batteries))
-                    total_scans = sum(item.get('views', 0) for item in all_batteries)
-                    c_st3.metric("Totaal Scans", total_scans)
+                    
+                    # Hier hebben we de tekst aangepast zoals gevraagd
+                    c_st2.metric("Totaal geregistreerde batterijen", len(all_batteries))
                     
                     st.divider()
 
@@ -457,17 +456,17 @@ else:
                     with col_left:
                         st.markdown("### 🏢 Partner Overzicht")
                         if all_companies and all_batteries:
-                            # Maak een lijst van bedrijven met hun batterij-count
+                            # Maak DataFrames
                             df_comp = pd.DataFrame(all_companies)
                             df_batt = pd.DataFrame(all_batteries)
                             
-                            # Tel het aantal batterijen per fabrikant
-                            counts = df_batt['manufacturer'].value_value_counts().reset_index()
-                            counts.columns = ['name', 'Aantal Batterijen']
+                            # CORRECTIE: value_counts() ipv value_value_counts()
+                            counts = df_batt['manufacturer'].value_counts().reset_index()
+                            counts.columns = ['name', 'Batterijen']
                             
-                            # Voeg de counts samen met de bedrijvenlijst
+                            # Voeg data samen
                             df_final = pd.merge(df_comp[['name', 'created_at']], counts, on='name', how='left').fillna(0)
-                            df_final['Aantal Batterijen'] = df_final['Aantal Batterijen'].astype(int)
+                            df_final['Batterijen'] = df_final['Batterijen'].astype(int)
                             
                             st.dataframe(
                                 df_final.rename(columns={'name': 'Bedrijf', 'created_at': 'Lid sinds'}), 
@@ -485,28 +484,38 @@ else:
                         with st.form("add_company_form", clear_on_submit=True):
                             new_comp_name = st.text_input("Naam van het bedrijf")
                             new_comp_pass = st.text_input("Wachtwoord", type="password")
+                            
+                            # Belangrijk: Gebruik form_submit_button binnen een form
                             submit_add = st.form_submit_button("Opslaan", use_container_width=True)
                             
                             if submit_add:
                                 if new_comp_name and new_comp_pass:
                                     secure_password = hash_password(new_comp_pass) 
-                                    new_payload = {"name": new_comp_name, "password": secure_password, "created_at": datetime.now().isoformat()}
+                                    new_payload = {
+                                        "name": new_comp_name, 
+                                        "password": secure_password, 
+                                        "created_at": datetime.now().isoformat()
+                                    }
                                     with httpx.Client() as client:
                                         resp = client.post(API_URL_COMPANIES, json=new_payload, headers=headers)
                                         if resp.status_code in [200, 201]:
                                             st.success(f"✅ {new_comp_name} toegevoegd!")
                                             st.rerun()
+                                        else:
+                                            st.error("Fout bij opslaan.")
                         
                         st.divider()
 
-                        # --- VERWIJDEREN (Buiten het formulier) ---
+                        # --- VERWIJDEREN (BUITEN HET FORMULIER) ---
                         st.write("🗑️ **Verwijder Partner**")
                         company_names = [c.get('name') for c in all_companies]
                         if company_names:
-                            target_company = st.selectbox("Selecteer bedrijf", company_names, key="del_select")
+                            target_company = st.selectbox("Selecteer bedrijf", company_names, key="del_select_admin")
                             if st.button(f"Verwijder {target_company}", type="secondary", use_container_width=True):
                                 with httpx.Client() as client:
                                     resp = client.delete(f"{API_URL_COMPANIES}?name=eq.{target_company}", headers=headers)
                                     if resp.status_code in [200, 204]:
-                                        st.success("Verwijderd.")
+                                        st.success(f"{target_company} verwijderd.")
                                         st.rerun()
+                                    else:
+                                        st.error("Fout bij verwijderen.")
