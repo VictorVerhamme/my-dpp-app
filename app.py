@@ -459,77 +459,61 @@ else:
                     # 3. GEDETAILLEERD OVERZICHT
                     col_left, col_right = st.columns([2, 1])
                     
-                    with col_left:
-                        st.markdown("### 🏢 Geregistreerde Partners")
-                        if all_companies:
-                            df_comp = pd.DataFrame(all_companies)
-                            # We tonen alleen de naam en de datum van aanmaak
-                            st.dataframe(df_comp[['name', 'created_at']], use_container_width=True, hide_index=True)
-                        else:
-                            st.warning("Geen bedrijfsgegevens gevonden.")
-
-                    with st.form("add_company_form", clear_on_submit=True):
-                        new_comp_name = st.text_input("Naam van het bedrijf")
-                        new_comp_pass = st.text_input("Wachtwoord voor dit bedrijf", type="password")
+                    with col_right:
+                        st.markdown("### 🛠️ Systeembeheer")
+                        st.divider()
                         
-                        if st.form_submit_button("Partner Registreren", use_container_width=True):
-                            if new_comp_name and new_comp_pass:
-                                # Controleer of het bedrijf al bestaat
-                                check_comp = get_data(f"{API_URL_COMPANIES}?name=eq.{new_comp_name}")
-                                
-                                if check_comp:
-                                    st.error(f"❌ Bedrijf '{new_comp_name}' bestaat al.")
-                                else:
-                                    # --- STAP 3: HIER WORDT HET WACHTWOORD VEILIG GEMAAKT ---
+                        # --- SECTIE A: PARTNER TOEVOEGEN (Met Formulier) ---
+                        st.write("➕ **Voeg een nieuwe Partner toe**")
+                        
+                        with st.form("add_company_form", clear_on_submit=True):
+                            new_comp_name = st.text_input("Naam van het bedrijf")
+                            new_comp_pass = st.text_input("Wachtwoord", type="password")
+                            
+                            # Binnen een formulier MOET je st.form_submit_button gebruiken
+                            submit_add = st.form_submit_button("Partner Registreren", use_container_width=True)
+                            
+                            if submit_add:
+                                if new_comp_name and new_comp_pass:
                                     secure_password = hash_password(new_comp_pass) 
-                                    
-                                    # Payload voor het nieuwe bedrijf (gebruikt nu de beveiligde hash)
                                     new_payload = {
                                         "name": new_comp_name,
                                         "password": secure_password, 
                                         "created_at": datetime.now().isoformat()
                                     }
-                                    
                                     with httpx.Client() as client:
                                         resp = client.post(API_URL_COMPANIES, json=new_payload, headers=headers)
                                         if resp.status_code in [200, 201]:
-                                            st.success(f"✅ Bedrijf '{new_comp_name}' succesvol toegevoegd!")
+                                            st.success(f"✅ {new_comp_name} toegevoegd!")
                                             st.rerun()
-                                        else:
-                                            st.error(f"❌ Fout bij toevoegen: {resp.text}")
-                            else:
-                                st.warning("Vul a.u.b. alle velden in.")
-            
-                        # --- NIEUW: BEDRIJF VERWIJDEREN SECTIE ---
-                        st.markdown("---")
+                                else:
+                                    st.warning("Vul alle velden in.")
+
+                        # --- SECTIE B: PARTNER VERWIJDEREN (BUITEN HET FORMULIER) ---
+                        st.divider()
                         st.write("🗑️ **Verwijder een Partner**")
                         
-                        # Maak een lijst van namen voor de selectiebox
                         company_names = [c.get('name') for c in all_companies]
                         
                         if company_names:
-                            target_company = st.selectbox("Selecteer bedrijf om te verwijderen", company_names, key="delete_company_select")
+                            target_company = st.selectbox("Selecteer bedrijf", company_names)
                             
-                            # Veiligheidscheck via een knop
-                            if st.button(f"Definitief verwijderen: {target_company}", type="secondary"):
-                                # Voer de DELETE request uit naar de Companies tabel
-                                delete_url = f"{API_URL_COMPANIES}?name=eq.{target_company}"
-                                
+                            # Deze knop staat nu VEILIG buiten het bovenstaande formulier
+                            if st.button(f"Definitief verwijderen: {target_company}", type="secondary", use_container_width=True):
                                 with httpx.Client() as client:
-                                    resp = client.delete(delete_url, headers=headers)
-                                    
+                                    resp = client.delete(f"{API_URL_COMPANIES}?name=eq.{target_company}", headers=headers)
                                     if resp.status_code in [200, 204]:
-                                        st.success(f"✅ Bedrijf '{target_company}' is succesvol verwijderd.")
-                                        # Forceer een refresh om de lijst in de linker kolom bij te werken
+                                        st.success(f"✅ {target_company} verwijderd.")
                                         st.rerun()
                                     else:
-                                        st.error(f"❌ Fout bij verwijderen: {resp.text}")
+                                        st.error("Fout bij verwijderen.")
                         else:
-                            st.info("Geen partners beschikbaar om te verwijderen.")
-                        
+                            st.info("Geen partners om te verwijderen.")
+                            
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
 
 
