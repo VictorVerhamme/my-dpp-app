@@ -175,78 +175,105 @@ if "id" in q_params:
         d = res[0]
         authority = is_authority()
         
-        # Mobiele CSS-injectie voor betere weergave
-        st.markdown("""
+        # Aggressieve CSS om de Streamlit-padding te verwijderen en kaarten te stylen
+        st.markdown(f"""
             <style>
-            .mobile-container {
-                background-color: white;
+            /* Verwijder standaard Streamlit witruimte voor een full-screen mobiele look */
+            .block-container {{
+                padding: 1rem 1rem !important;
+                max-width: 100% !important;
+            }}
+            .main-card {{
+                background: white;
+                border-radius: 20px;
                 padding: 20px;
-                border-radius: 15px;
-                border-top: 8px solid #8FAF9A;
-                margin: -10px; /* Haalt zijmarges op mobiel weg */
-                box-shadow: 0px 4px 10px rgba(0,0,0,0.05);
-            }
-            .metric-box {
-                background-color: #F8F9F9;
-                padding: 15px;
-                border-radius: 10px;
-                margin-bottom: 10px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+                border-top: 10px solid {COLOR_ACCENT};
+            }}
+            .stat-grid {{
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin: 20px 0;
+            }}
+            .stat-item {{
+                background: #f9fbf9;
+                padding: 15px 10px;
+                border-radius: 12px;
                 text-align: center;
-            }
-            .stMetric {
-                text-align: center !important;
-            }
+                border: 1px solid #eee;
+            }}
+            .stat-label {{ font-size: 0.75rem; color: #666; text-transform: uppercase; margin-bottom: 5px; }}
+            .stat-value {{ font-size: 1.1rem; font-weight: bold; color: {COLOR_ACCENT}; }}
+            .soh-bar-container {{
+                background: #eee;
+                border-radius: 10px;
+                height: 12px;
+                width: 100%;
+                margin: 10px 0;
+            }}
+            .soh-bar-fill {{
+                background: {COLOR_ACCENT};
+                height: 100%;
+                border-radius: 10px;
+                width: {d.get('soh_pct', 100)}%;
+            }}
             </style>
         """, unsafe_allow_html=True)
 
-        st.markdown('<div class="mobile-container">', unsafe_allow_html=True)
-        
-        # 1. Header
-        st.image(LOGO_URL, width=150)
-        st.title(d.get('name', 'Batterij Paspoort'))
-        st.caption(f"ID: {d.get('battery_uid', 'N/A')}")
-        
-        st.divider()
+        # Start van de HTML weergave
+        st.markdown(f"""
+            <div class="main-card">
+                <center>
+                    <img src="{LOGO_URL}" width="120">
+                    <h2 style='margin-bottom:0;'>{d.get('name')}</h2>
+                    <p style='color:grey; font-size:0.8rem;'>Batch: {d.get('batch_number')} | Model: {d.get('model_name')}</p>
+                </center>
+                
+                <div class="stat-grid">
+                    <div class="stat-item">
+                        <div class="stat-label">🌍 CO2 Impact</div>
+                        <div class="stat-value">{d.get('carbon_footprint', 0)} kg</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">♻️ Recycled Li</div>
+                        <div class="stat-value">{d.get('rec_lithium_pct', 0)}%</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">⚡ Capaciteit</div>
+                        <div class="stat-value">{d.get('capacity_kwh', 0)} kWh</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">🔄 Cycli</div>
+                        <div class="stat-value">{d.get('cycles_to_80', 0)}</div>
+                    </div>
+                </div>
 
-        # 2. Belangrijkste Metrics (Groot & Duidelijk)
-        # We gebruiken metrics die op mobiel onder elkaar komen te staan
-        col_m1, col_m2 = st.columns(2)
-        with col_m1:
-            st.metric("🌍 Klimaatimpact", f"{d.get('carbon_footprint', 0)} kg")
-        with col_m2:
-            st.metric("♻️ Recycled", f"{d.get('rec_lithium_pct', 0)}%")
-        
-        st.divider()
+                <div style="margin-top:20px;">
+                    <span style="font-size:0.9rem; font-weight:bold;">🔋 Gezondheid (SoH): {d.get('soh_pct', 100)}%</span>
+                    <div class="soh-bar-container">
+                        <div class="soh-bar-fill"></div>
+                    </div>
+                </div>
 
-        # 3. Batterij Gezondheid (Visueel)
-        st.markdown("### 🔋 Batterij Conditie")
-        soh = d.get('soh_pct', 100)
-        st.write(f"Huidige Gezondheid: **{soh}%**")
-        st.progress(soh / 100)
-        
-        # Extra details in kleine blokken
-        st.write("---")
-        det1, det2 = st.columns(2)
-        det1.write(f"⚡ **Capaciteit**\n{d.get('capacity_kwh', 0)} kWh")
-        det2.write(f"🔄 **Laadcycli**\n{d.get('cycles_to_80', 0)}")
+                <div style="background:#fff3cd; padding:15px; border-radius:10px; margin-top:20px; font-size:0.85rem; border-left: 5px solid #ffc107;">
+                    <strong>♻️ Einde levensduur:</strong><br>
+                    {d.get('eol_instructions', 'Lever in bij een officieel inzamelpunt.')}
+                </div>
+                
+                <p style='text-align:center; font-size:0.7rem; color:#aaa; margin-top:30px;'>
+                    ✅ Officieel EU Digital Product Passport<br>Verifieerbaar via Blockchain & Audits
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
 
-        st.divider()
-
-        # 4. Circulariteit & Instructies
-        st.markdown("### ♻️ Einde Levensduur")
-        st.info(d.get('eol_instructions') or "Lever dit product in bij een officieel batterij-inzamelpunt.")
-        
-        # 5. Admin/Inspectie View
+        # Alleen voor inspecteurs (expander werkt wel goed op mobiel)
         if authority:
             with st.expander("🕵️ Inspectie Details"):
                 st.write("**Producent:**", d.get("manufacturer"))
-                st.write("**Batch:**", d.get("batch_number"))
-                st.write("**Geregistreerd:**", d.get("registration_date"))
-        
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        # Footer voor consumentenvertrouwen
-        st.caption("✅ Geverifieerd EU Digital Product Passport")
+                st.write("**Registratie:**", d.get("registration_date"))
+                st.write("**UUID:**", d.get("battery_uid"))
+
     else:
         st.error("Ongeldige QR-code. Paspoort niet gevonden.")
         
@@ -581,6 +608,7 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
 
 
