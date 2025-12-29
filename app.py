@@ -169,11 +169,64 @@ if 'auth_mode' not in st.session_state:
     st.session_state.auth_mode = "landing"
 
 if "id" in q_params:
-    # --- PASPOORT VIEW (Blijft ongewijzigd) ---
+    # --- PASPOORT VIEW (SCAN) ---
     res = get_data(f"{API_URL_BATTERIES}?id=eq.{q_params['id']}")
     if res:
-        # ... (je bestaande paspoort code) ...
-        pass
+        d = res[0]
+        authority = is_authority()
+        
+        # 1. Header met Logo en Naam
+        st.markdown(f"<div style='background:white; padding:40px; border-radius:25px; text-align:center; border-top:10px solid {COLOR_ACCENT}; shadow: 0 4px 6px rgba(0,0,0,0.1);'>", unsafe_allow_html=True)
+        st.image(LOGO_URL, width=220)
+        st.title(f"🔋 {d.get('name')}")
+        st.write(f"**Model ID:** {d.get('model_name', 'N/A')} | **Batch:** {d.get('batch_number', 'N/A')}")
+        
+        st.divider()
+
+        # 2. Milieu & Duurzaamheid (Consumentvriendelijk)
+        st.subheader("🌿 Duurzaamheid & Impact")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.metric("🌍 CO₂ Voetafdruk", f"{d.get('carbon_footprint', 0)} kg", help="De totale uitstoot tijdens de productie.")
+            st.caption("Deze batterij heeft een lage klimaatimpact vergeleken met de industriestandaard.")
+        with c2:
+            st.metric("♻️ Gerecycled Lithium", f"{d.get('rec_lithium_pct', 0)}%", help="Percentage lithium dat is teruggewonnen uit oude batterijen.")
+            st.caption(f"Bevat herwonnen materialen om de winning van nieuwe grondstoffen te beperken.")
+
+        st.divider()
+
+        # 3. Prestaties & Conditie
+        st.subheader("📊 Batterij Status")
+        p1, p2, p3 = st.columns(3)
+        with p1:
+            st.write("**Gezondheid (SoH)**")
+            st.title(f"{d.get('soh_pct', 100)}%")
+            st.progress(d.get('soh_pct', 100) / 100)
+        with p2:
+            st.write("**Capaciteit**")
+            st.title(f"⚡ {d.get('capacity_kwh', 0)} kWh")
+        with p3:
+            st.write("**Levensduur**")
+            st.title(f"🔄 {d.get('cycles_to_80', 0)}")
+            st.caption("Laadcycli tot 80%")
+
+        st.divider()
+
+        # 4. Circulariteit (EOL)
+        st.subheader("♻️ Wat te doen na gebruik?")
+        st.warning(f"**Instructies voor inlevering:**\n\n{d.get('eol_instructions') or 'Volg de lokale regels voor chemisch afval.'}")
+        
+        # 5. Extra info voor overheden (indien ingelogd/via role)
+        if authority:
+            with st.expander("🕵️ Administratieve Audit Trail (Enkel Inspectie)"):
+                st.write("**UUID:**", d.get("battery_uid"))
+                st.write("**Producent:**", d.get("manufacturer"))
+                st.write("**Registratiedatum:**", d.get("registration_date"))
+                st.write("**Aantal scans:**", d.get("views", 0))
+
+        st.markdown("</div>", unsafe_allow_html=True)
+    else:
+        st.error("Dit productpaspoort kon niet worden gevonden in de database.")
 
 else:
     # --- DASHBOARD & LANDING PAGE LOGICA ---
@@ -506,6 +559,7 @@ else:
                         st.markdown("---")
                         # Bestaande systeem status info
                         st.success("API & Database: Verbonden")
+
 
 
 
