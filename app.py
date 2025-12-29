@@ -272,32 +272,46 @@ else:
                     st.write("Verbind fabrikanten, overheden en consumenten in één veilig ecosysteem.")
                     
         elif st.session_state.auth_mode == "login":
-            # --- STAP B: HET INLOGSCHERM ---
-            st.markdown('<div class="login-container">', unsafe_allow_html=True)
-            st.image(LOGO_URL, width=300)
-            st.markdown("### Inloggen op uw Dashboard")
-            u = st.text_input("Username", placeholder="Naam", label_visibility="collapsed")
-            p = st.text_input("Password", type="password", placeholder="Wachtwoord", label_visibility="collapsed")
+            # --- STAP B: HET INLOGSCHERM (Gecentreerd & Compact) ---
             
-            col_back, col_log = st.columns(2)
-            with col_back:
-                if st.button("⬅ Terug"):
-                    st.session_state.auth_mode = "landing"
-                    st.rerun()
-            with col_log:
-                if st.button("Inloggen"):
-                    res = get_data(f"{API_URL_COMPANIES}?name=eq.{u}")
-                    if res:
-                        stored_hash = res[0]['password']
-                        # Gebruik de helper functie om te verifiëren
-                        if check_password(p, stored_hash):
-                            st.session_state.company = res[0]['name']
+            # 1. We maken 3 kolommen: de buitenste zijn leeg, de middelste is voor de kaart.
+            # De verhouding [1, 2, 1] zorgt ervoor dat de kaart de helft van het scherm inneemt.
+            _, center_col, _ = st.columns([1, 2, 1])
+
+            with center_col:
+                # 2. Gebruik een container met border voor een echte "Card" look
+                with st.container(border=True):
+                    # Logo centreren
+                    st.image(LOGO_URL, use_container_width=True)
+                    
+                    st.markdown("<h3 style='text-align: center; margin-top: -20px;'>Dashboard Login</h3>", unsafe_allow_html=True)
+                    st.write("---")
+                    
+                    # Input velden
+                    u = st.text_input("Gebruikersnaam", placeholder="Naam", label_visibility="visible")
+                    p = st.text_input("Wachtwoord", type="password", placeholder="Wachtwoord", label_visibility="visible")
+                    
+                    st.write("") # Extra witruimte
+                    
+                    # Knoppen naast elkaar
+                    col_back, col_log = st.columns(2)
+                    with col_back:
+                        if st.button("⬅ Terug", use_container_width=True):
+                            st.session_state.auth_mode = "landing"
                             st.rerun()
-                        else:
-                            st.error("Wachtwoord onjuist.")
-                    else:
-                        st.error("Gebruiker niet gevonden.")
-            st.markdown('</div>', unsafe_allow_html=True)
+                    with col_log:
+                        # De hoofdknop
+                        if st.button("Inloggen ➔", use_container_width=True, type="primary"):
+                            res = get_data(f"{API_URL_COMPANIES}?name=eq.{u}")
+                            if res:
+                                stored_hash = res[0]['password']
+                                if check_password(p, stored_hash):
+                                    st.session_state.company = res[0]['name']
+                                    st.rerun()
+                                else:
+                                    st.error("Wachtwoord onjuist.")
+                            else:
+                                st.error("Gebruiker niet gevonden.")
             
     else:
         # SIDEBAR
@@ -630,6 +644,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
