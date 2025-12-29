@@ -141,7 +141,7 @@ def generate_certificate(data):
     pdf.set_font("Arial", '', 9)
     pdf.multi_cell(190, 6, txt=str(data.get('mineral_origin') or "Geen herkomstinformatie opgegeven."), border=1)
     
-    pdf.ln(3)
+    pdf.ln(5)
 
     # End-of-Life
     pdf.set_font("Arial", 'B', 10)
@@ -150,7 +150,7 @@ def generate_certificate(data):
     pdf.multi_cell(190, 6, txt=str(data.get('eol_instructions') or "Niet gespecificeerd."), border=1)
 
     # 6. QR CODE & VERIFICATIE
-    pdf.ln(5)
+    pdf.ln(15)
     qr_img_bytes = make_qr(data['id'])
     with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp_qr:
         tmp_qr.write(qr_img_bytes)
@@ -630,6 +630,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
