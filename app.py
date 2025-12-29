@@ -444,8 +444,8 @@ else:
             # --- TABS DEFINIËREN ---
             if st.session_state.company == "SuperAdmin":
                 # SuperAdmin krijgt alleen Vloot en Admin Control
-                tab_fleet, tab_admin = st.tabs(["📊 Vlootoverzicht", "🔐 Admin Control"])
-                tab_reg, tab_bulk = None, None # Deze bestaan niet voor Admin
+                tab_admin = st.tabs(["🔐 Admin Control"])
+                tab_reg, tab_fleet, tab_bulk = None, None, None # Deze bestaan niet voor Admin
             else:
                 # Normale gebruikers krijgen de standaard 3 tabs
                 tab_reg, tab_fleet, tab_bulk = st.tabs(["✨ Nieuwe Registratie", "📊 Vlootoverzicht", "📂 Bulk Import"])
@@ -721,6 +721,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
