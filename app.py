@@ -9,7 +9,6 @@ import uuid
 import os
 from datetime import datetime
 import bcrypt
-import plotly.express as px
 
 # --- 1. CONFIGURATIE ---
 SUPABASE_URL = "https://nihebcwfjtezkufbxcnq.supabase.co"
@@ -666,37 +665,6 @@ else:
                     
                     st.divider()
 
-                    # --- NIEUW: VISUELE COMPLIANCE ANALYSE ---
-                    if all_batteries:
-                        st.markdown("### 📊 Status van de vloot")
-                        
-                        # Data voorbereiden voor het diagram
-                        compliant_count = len(all_batteries) - total_non_compliant
-                        chart_data = pd.DataFrame({
-                            "Status": ["Conform ✅", "Inbreuk ⚠️"],
-                            "Aantal": [compliant_count, total_non_compliant]
-                        })
-
-                        # Kleuren definiëren (Zacht groen en waarschuwend rood)
-                        fig = px.pie(
-                            chart_data, 
-                            values='Aantal', 
-                            names='Status',
-                            hole=0.4, # Maakt er een 'donut' van, ziet er moderner uit
-                            color='Status',
-                            color_discrete_map={'Conform ✅': '#8FAF9A', 'Inbreuk ⚠️': '#d9534f'}
-                        )
-
-                        # Layout optimaliseren
-                        fig.update_layout(
-                            showlegend=True,
-                            margin=dict(t=0, b=0, l=0, r=0),
-                            height=300
-                        )
-
-                        st.plotly_chart(fig, use_container_width=True)
-                    st.divider()
-
                     # 4. LAYOUT IN TWEE KOLOMMEN
                     col_left, col_right = st.columns([2, 1])
 
@@ -707,7 +675,7 @@ else:
                             df_batt = pd.DataFrame(all_batteries)
                             df_batt['ok'] = df_batt.apply(check_compliance_logic, axis=1)
                             
-                            # Kolommen tellen en hernoemen
+                            # Kolommen tellen en hernoemen (voorkomt KeyError)
                             counts = df_batt['manufacturer'].value_counts().reset_index().rename(columns={'count':'Units','manufacturer':'name'})
                             fails = df_batt[df_batt['ok'] == False]['manufacturer'].value_counts().reset_index().rename(columns={'count':'⚠️ Niet Conform','manufacturer':'name'})
                             
@@ -718,38 +686,7 @@ else:
                             # Typen corrigeren
                             df_final['Units'] = df_final['Units'].astype(int)
                             df_final['⚠️ Niet Conform'] = df_final['⚠️ Niet Conform'].astype(int)
-
-                            # --- 📊 START MODERNE DONUT GRAFIEK ---
-                            total_count = len(df_batt)
-                            non_compliant_total = df_final['⚠️ Niet Conform'].sum()
-                            compliant_total = total_count - non_compliant_total
-                            compliance_pct = round((compliant_total / total_count) * 100) if total_count > 0 else 0
-
-                            fig = px.pie(
-                                values=[compliant_total, non_compliant_total], 
-                                names=["Conform ✅", "Inbreuk ⚠️"],
-                                hole=0.6,
-                                color=["Conform ✅", "Inbreuk ⚠️"],
-                                color_discrete_map={"Conform ✅": "#8FAF9A", "Inbreuk ⚠️": "#d9534f"}
-                            )
-
-                            fig.update_traces(
-                                textinfo='none', # Geen tekst op de ring zelf voor een cleaner look
-                                marker=dict(line=dict(color=COLOR_BG, width=4))
-                            )
-
-                            fig.update_layout(
-                                showlegend=True,
-                                legend=dict(orientation="h", yanchor="bottom", y=-0.1, xanchor="center", x=0.5),
-                                margin=dict(t=0, b=0, l=0, r=0),
-                                height=220,
-                                annotations=[dict(text=f"{compliance_pct}%", x=0.5, y=0.5, font_size=32, showarrow=False, font_color=COLOR_ACCENT)]
-                            )
-
-                            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                            # --- 📊 EINDE GRAFIEK ---
-
-                            # De tabel komt er direct onder
+                            
                             st.dataframe(
                                 df_final.rename(columns={'name': 'Bedrijf', 'created_at': 'Lid sinds'}), 
                                 use_container_width=True, 
@@ -794,5 +731,3 @@ else:
                                 if st.button(f"Bevestig Verwijdering van {to_delete}", type="secondary", use_container_width=True):
                                     httpx.delete(f"{API_URL_COMPANIES}?name=eq.{to_delete}", headers=headers)
                                     st.rerun()
-
-
