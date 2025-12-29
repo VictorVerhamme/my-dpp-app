@@ -284,7 +284,7 @@ else:
                     # Door [1, 1, 1] te gebruiken, dwingen we het logo exact in het midden.
                     sub_l, sub_m, sub_r = st.columns([1, 1, 1])
                     with sub_m:
-                        st.image(LOGO_URL, width=900) # Formaat van je logo
+                        st.image(LOGO_URL, width=750) # Formaat van je logo
 
                     # --- 3. CENTREREN VAN DE TEKST ---
                     st.markdown("""
@@ -653,6 +653,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
