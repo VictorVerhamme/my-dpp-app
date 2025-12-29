@@ -30,6 +30,13 @@ headers = {
 }
 
 # --- 2. HELPERS ---
+def update_data(endpoint, item_id, payload):
+    url = f"{endpoint}?id=eq.{item_id}"
+    with httpx.Client() as client:
+        # PATCH zorgt ervoor dat we alleen sturen wat we willen veranderen
+        response = client.patch(url, json=payload, headers=headers)
+        return response.status_code
+        
 def hash_password(password):
     # Maak een veilig "gehashed" wachtwoord
     salt = bcrypt.gensalt()
@@ -521,4 +528,5 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
