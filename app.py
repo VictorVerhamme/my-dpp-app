@@ -282,7 +282,7 @@ else:
                 # 2. Gebruik een container met border voor een echte "Card" look
                 with st.container(border=True):
                     # Logo centreren
-                    st.image(LOGO_URL, use_container_width=True)
+                    st.image(LOGO_URL, width=400)
                     
                     st.markdown("<h3 style='text-align: center; margin-top: -20px;'>Dashboard Login</h3>", unsafe_allow_html=True)
                     st.write("---")
@@ -644,6 +644,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
