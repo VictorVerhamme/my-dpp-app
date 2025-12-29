@@ -326,7 +326,7 @@ else:
         # SIDEBAR
         st.sidebar.image(LOGO_URL, width=150)
         st.sidebar.title(f"Welkom, {st.session_state.company}")
-        nav = st.sidebar.radio("Navigatie", ["🏠 Dashboard", "📖 Compliance Gids"])
+        nav = st.sidebar.radio("Navigatie", ["🏠 Dashboard", "⚠️ Compliance Monitor", "📖 Compliance Gids"])
         if st.sidebar.button("Uitloggen"):
             st.session_state.company = None; st.rerun()
 
@@ -370,6 +370,60 @@ else:
             * **End-of-life instructies (verplicht):** Instructies voor correcte afvoer door de consument.
             * **Herkomst kritieke grondstoffen (Due Diligence):** Bronnen van kritieke grondstoffen, inclusief due diligence, bijv. “NMC: Democratische Republiek Congo, LFP: China”.
             """)
+
+        elif nav == "⚠️ Compliance Monitor":
+            st.title("⚠️ Compliance Monitor")
+            st.markdown("Hier ziet u welke batterijen actie vereisen om aan de EU-normen te voldoen.")
+
+            # 1. Data ophalen voor deze specifieke partner
+            raw_data = get_data(f"{API_URL_BATTERIES}?manufacturer=eq.{st.session_state.company}")
+            
+            if not raw_data:
+                st.success("🎉 Geen batterijen gevonden. Alles is in orde of u moet nog registreren.")
+            else:
+                non_compliant_list = []
+
+                # 2. De Compliance Check Logica
+                for item in raw_data:
+                    reasons = []
+                    
+                    # Check A: Verplichte velden (Pijler 1 & 8)
+                    if not item.get('mineral_origin') or len(str(item.get('mineral_origin'))) < 5:
+                        reasons.append("Grondstofherkomst (Due Diligence) ontbreekt of is onvoldoende.")
+                    if not item.get('factory_address'):
+                        reasons.append("Fabriekslocatie is niet gespecificeerd.")
+                    if not item.get('eol_instructions') or len(str(item.get('eol_instructions'))) < 20:
+                        reasons.append("End-of-life instructies zijn niet conform (te kort).")
+                    
+                    # Check B: Recycling targets (Pijler 3)
+                    # We markeren het als waarschuwing als alles op 0 staat (onrealistisch voor EU)
+                    if item.get('rec_lithium_pct', 0) == 0 and item.get('rec_cobalt_pct', 0) == 0:
+                        reasons.append("Geen gerecycleerde inhoud opgegeven (Li/Co).")
+
+                    # Check C: Markttoegang (Pijler 5)
+                    if not item.get('ce_doc_reference'):
+                        reasons.append("CE Conformiteitsverklaring (DoC) referentie ontbreekt.")
+
+                    if reasons:
+                        non_compliant_list.append({
+                            "UID": item.get('battery_uid'),
+                            "Naam": item.get('name'),
+                            "Redenen van Afwijking": " | ".join(reasons)
+                        })
+
+                # 3. Weergave van de resultaten
+                if non_compliant_list:
+                    st.warning(f"Er zijn {len(non_compliant_list)} batterijen die niet volledig voldoen aan de EU-verordening.")
+                    
+                    df_issues = pd.DataFrame(non_compliant_list)
+                    
+                    # Weergave in een tabel die de volledige tekst laat zien
+                    st.table(df_issues)
+                    
+                    st.info("💡 **Advies:** Ga naar het Dashboard en gebruik de 'Update' functie om de ontbrekende gegevens aan te vullen.")
+                else:
+                    st.success("✅ Gefeliciteerd! Al uw geregistreerde batterijen voldoen aan de huidige compliance-checks.")
+                    
         else:
             st.title("Digital Passport Management")
             
@@ -653,6 +707,7 @@ else:
                                         st.rerun()
                                     else:
                                         st.error("Fout bij verwijderen.")
+
 
 
 
